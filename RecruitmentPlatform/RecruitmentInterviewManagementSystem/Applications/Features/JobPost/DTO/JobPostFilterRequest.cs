@@ -8,5 +8,9 @@
         public decimal? MinSalary { get; set; } // Lương tối thiểu
         public decimal? MaxSalary { get; set; } // Lương tối đa
         public int? JobType { get; set; }       // Loại công việc (1: Full-time, v.v.)
+        public int? Experience { get; set; }
+        public int PageNumber { get; set; } = 1; // Mặc định trang 1
+        public int PageSize { get; set; } = 10; // Mặc định 10 job/trang
+
     }
 }

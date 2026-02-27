@@ -29,5 +29,6 @@
         public int? ViewCount { get; set; }
 
         public DateTime? CreatedAt { get; set; }
+        public int? Experience { get; set; }
     }
 }

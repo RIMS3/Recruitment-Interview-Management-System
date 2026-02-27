@@ -2,8 +2,12 @@
 using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.DTO;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
 {
@@ -18,27 +22,23 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
 
         public async Task<IEnumerable<JobPost>> GetAllAsync()
         {
-            // Lấy danh sách Job đang hoạt động (IsActive = true)
             return await _context.JobPosts
                                  .Where(x => x.IsActive == true)
                                  .ToListAsync();
         }
 
-        public async Task<IEnumerable<JobPost>> GetFilteredJobsAsync(JobPostFilterRequest filter)
+        public async Task<IEnumerable<JobPostItemDTO>> GetFilteredJobsAsync(JobPostFilterRequest filter)
         {
-            // Tạo truy vấn cơ bản
-            var query = _context.JobPosts.AsQueryable();
+            // 1. Khởi tạo truy vấn
+            var query = _context.JobPosts.Where(x => x.IsActive == true).AsQueryable();
 
-            // 1. Luôn ưu tiên lấy các Job đang hoạt động
-            query = query.Where(x => x.IsActive == true);
-
-            // 2. MỚI: Lọc theo ID (Nếu có ID thì chỉ lấy 1 bản ghi đó)
+            // 2. Lọc theo ID
             if (filter.Id.HasValue)
             {
                 query = query.Where(x => x.Id == filter.Id.Value);
             }
 
-            // 3. Lọc theo từ khóa (Search) - Tìm trong tiêu đề
+            // 3. Lọc theo từ khóa
             if (!string.IsNullOrWhiteSpace(filter.Search))
             {
                 string searchLower = filter.Search.ToLower();
@@ -51,28 +51,57 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
                 query = query.Where(x => x.Location != null && x.Location.Contains(filter.Location));
             }
 
-            // 5. SỬA: Lọc theo khoảng lương
-            // Lấy các Job có mức lương khởi điểm cao hơn hoặc bằng MinSalary người dùng nhập
-            if (filter.MinSalary.HasValue)
-            {
-                query = query.Where(x => x.SalaryMin >= filter.MinSalary.Value);
-            }
+            // 5. Lọc theo lương
+            if (filter.MinSalary.HasValue) query = query.Where(x => x.SalaryMin >= filter.MinSalary.Value);
+            if (filter.MaxSalary.HasValue) query = query.Where(x => x.SalaryMax <= filter.MaxSalary.Value);
 
-            // Lấy các Job có mức lương trần thấp hơn hoặc bằng MaxSalary người dùng nhập
-            if (filter.MaxSalary.HasValue)
-            {
-                query = query.Where(x => x.SalaryMax <= filter.MaxSalary.Value);
-            }
-
-            // 6. Lọc theo loại công việc
+            // 6. Lọc theo JobType (Ép kiểu int để so sánh)
             if (filter.JobType.HasValue)
             {
-                query = query.Where(x => x.JobType == filter.JobType.Value);
+                query = query.Where(x => (int)x.JobType == filter.JobType.Value);
             }
 
-            // Trả về danh sách mới nhất lên đầu
-            return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            // 7. Lọc theo Experience (Dùng == vì Experience là int trong DB)
+            if (filter.Experience.HasValue)
+            {
+                query = query.Where(x => x.Experience == filter.Experience.Value);
+            }
+
+            // 8. Phân trang
+            int page = filter.PageNumber > 0 ? filter.PageNumber : 1;
+            int size = filter.PageSize > 0 ? filter.PageSize : 10;
+
+            // 9. Mapping dữ liệu sang DTO để API có dữ liệu (không bị NULL)
+            return await query
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((page - 1) * size)
+                .Take(size)
+               .Select(x => new JobPostItemDTO
+               {
+                   IdJobPost = x.Id,
+                   Title = x.Title,
+                   Location = x.Location,
+                   SalaryMin = x.SalaryMin,
+                   SalaryMax = x.SalaryMax,
+                   ExpireAt = x.ExpireAt,
+
+                   // Đảm bảo lấy giá trị Experience từ Entity x
+                   Experience = x.Experience, // Nếu null thì để là 0 năm, hoặc cứ để x.Experience nếu muốn null
+
+                   // Ép kiểu Enum cẩn thận
+                   JobType = x.JobType.HasValue ? (JobType)x.JobType.Value : null
+               })
+                .ToListAsync();
         }
 
+        public async Task<List<string>> GetLocationsAsync()
+        {
+            return await _context.JobPosts
+                .Where(x => !string.IsNullOrEmpty(x.Location))
+                .Select(x => x.Location!)
+                .Distinct()
+                .OrderBy(x => x)    
+                .ToListAsync();
+        }
     }
 }

@@ -6,9 +6,11 @@ namespace RecruitmentInterviewManagementSystem.Domain.InterfacesRepository
 {
     public interface IJobPostRepository
     {
-        //Task<bool> AddNewJobPost(JobPostEntity job);
         Task<IEnumerable<JobPost>> GetAllAsync();
-        Task<IEnumerable<JobPost>> GetFilteredJobsAsync(JobPostFilterRequest filter);
 
+        // SỬA TẠI ĐÂY: Trả về JobPostItemDTO thay vì JobPost
+        Task<IEnumerable<JobPostItemDTO>> GetFilteredJobsAsync(JobPostFilterRequest filter);
+
+        Task<List<string>> GetLocationsAsync();
     }
 }

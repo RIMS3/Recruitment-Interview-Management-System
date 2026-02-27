@@ -1,5 +1,6 @@
 ﻿using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Interface;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 
 namespace RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Services
@@ -26,6 +27,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Ser
             //}
 
             // 3. Mapping sang DTO
+
+
+           
             return jobs.Select(j => new JobPostItemDTO
             {
                 IdJobPost = j.Id, // j.Id lấy từ Model JobPost bạn vừa gửi
@@ -33,7 +37,10 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Ser
                 Location = j.Location,
                 SalaryMin = j.SalaryMin,
                 SalaryMax = j.SalaryMax,
-                ExpireAt = j.ExpireAt
+                ExpireAt = j.ExpireAt,
+                 Experience = j.Experience,
+                JobType = (JobType?)j.JobType
+
             }).ToList();
         }
 

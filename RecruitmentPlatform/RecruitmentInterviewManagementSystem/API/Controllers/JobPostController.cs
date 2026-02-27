@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Interface;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
@@ -28,7 +29,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             var result = await _viewService.ExecuteAsync(request);
             return Ok(result);
         }
-
+        
         [HttpGet("filter")]
         public async Task<ActionResult<IEnumerable<JobPost>>> GetFilteredJobs([FromQuery] JobPostFilterRequest filter)
         {
@@ -41,6 +42,13 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             {
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
+        }
+
+        [HttpGet("locations")]
+        public async Task<IActionResult> GetLocations()
+        {
+            var locations = await _jobPostRepository.GetLocationsAsync();
+            return Ok(locations);
         }
     }
 }
