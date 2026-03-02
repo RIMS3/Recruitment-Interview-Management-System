@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Models;
 
@@ -33,8 +34,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
                 Email = email,
                 FullName = fullName,
                 IsActive = true,
-                Role = 0,
-                PasswordHash = Guid.NewGuid().ToString() // 👈 fake password
+                Role = (int)Role.CANDIDATE, //set role mac dinh la candidate
+                PasswordHash = Guid.NewGuid().ToString()
             };
 
             _context.Users.Add(user);
@@ -49,7 +50,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
                 user.Id,
                 user.Email,
                 user.FullName,
-                user.Role ?? 0,
+                (Role)(user.Role ?? (int)Role.CANDIDATE),
                 user.IsActive ?? false
             );
         }
