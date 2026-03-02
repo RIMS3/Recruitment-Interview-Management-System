@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using RecruitmentInterviewManagementSystem.API.DI;
 using RecruitmentInterviewManagementSystem.Applications.Features.Auth;
 using RecruitmentInterviewManagementSystem.Applications.Features.BookingInterviewSlot.Interfaces;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
@@ -9,15 +10,18 @@ using RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Service
 using RecruitmentInterviewManagementSystem.Applications.Features.JobPostDetail.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
+using RecruitmentInterviewManagementSystem.Infastructure.MinIO;
 using RecruitmentInterviewManagementSystem.Infastructure.Repository;
 using RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement;
 using RecruitmentInterviewManagementSystem.Models;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using RecruitmentInterviewManagementSystem.API.DI;
 using RecruitmentInterviewManagementSystem.Infastructure.Workers;
 
+using Minio;
 namespace RecruitmentInterviewManagementSystem.Start
 {
     public class Program
@@ -56,6 +60,13 @@ namespace RecruitmentInterviewManagementSystem.Start
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddMinio(configureClient => configureClient
+                 .WithEndpoint("localhost:9000")
+                 .WithCredentials("admin", "admin123") // Đảm bảo khớp với lệnh Docker của bạn
+                 .WithSSL(false)
+                 .Build());
+            builder.Services.AddScoped<IMinIOCV, MinIOfaketopcv>();
 
             var jwtSecret = builder.Configuration["Authentication:Jwt:Secret"]
                             ?? throw new Exception("JWT Secret not configured");
