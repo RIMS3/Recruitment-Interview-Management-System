@@ -3,6 +3,7 @@ using RecruitmentInterviewManagementSystem.Applications.DTOs;
 using RecruitmentInterviewManagementSystem.Applications.Features.Auth.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Models;
 
 namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
@@ -38,7 +39,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 user.Id,
                 user.Email,
                 user.FullName!,
-                user.Role ?? 0,
+                (Role)(user.Role ?? 0),
                 user.IsActive ?? true
             );
 
@@ -66,7 +67,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 Email = user.Email,
-                FullName = user.FullName!
+                FullName = user.FullName!,
+                Role = user.Role ?? 0
             };
         }
     }

@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using RecruitmentInterviewManagementSystem.Applications.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RecruitmentInterviewManagementSystem.Applications.DTOs;
 using RecruitmentInterviewManagementSystem.Applications.Features.Auth.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement;
 using RecruitmentInterviewManagementSystem.Models;
 
@@ -94,7 +95,7 @@ public class AuthController : ControllerBase
             user.Id,
             user.Email,
             user.FullName!,
-            user.Role ?? 0,
+            (Role)(user.Role ?? 0),
             user.IsActive ?? true
         );
 

@@ -4,4 +4,5 @@
     public string RefreshToken { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string FullName { get; set; } = null!;
+    public int Role { get; set; }
 }
