@@ -1,38 +1,51 @@
+﻿using RecruitmentInterviewManagementSystem.Applications.DTOs;
+using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Interface;
+using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 using RecruitmentInterviewManagementSystem.Models;
+using System;
+using System.Threading.Tasks;
 
-namespace RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Services
+namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 {
     public class ApplicationService : IApplicationService
     {
-        private readonly IApplicationRepository _repository;
+        private readonly IApplicationRepository _applicationRepository;
 
-        public ApplicationService(IApplicationRepository repository)
+        public ApplicationService(IApplicationRepository applicationRepository)
         {
-            _repository = repository;
+            _applicationRepository = applicationRepository;
         }
 
-        public async Task ApplyJobAsync(Guid candidateId, Guid jobId, Guid cvId)
+        public async Task<string> ApplyForJobAsync(ApplyJobRequestDto request)
         {
-            var isApplied = await _repository
-                .IsAlreadyAppliedAsync(jobId, candidateId);
+            // 1. Kiểm tra đã apply chưa
+            var isAlreadyApplied = await _applicationRepository.CheckApplicationExistsAsync(request.JobId, request.CandidateId);
 
-            if (isApplied)
-                throw new Exception("You already applied this job.");
+            if (isAlreadyApplied)
+            {
+                throw new Exception("Bạn đã ứng tuyển vào vị trí này rồi.");
+            }
 
-            var application = new Application
+            // 2. Tạo bản ghi Application
+            var newApplication = new Application
             {
                 Id = Guid.NewGuid(),
-                JobId = jobId,
-                CandidateId = candidateId,
-                Cvid = cvId,
+                JobId = request.JobId,
+                CandidateId = request.CandidateId,
+                Cvid = request.CvId,
                 Status = (int)ApplicationStatus.Pending,
-                AppliedAt = DateTime.UtcNow
+                AppliedAt = DateTime.Now,
+                // Đảm bảo không có trường nào khác bị bắt buộc (Required) trong DB mà đang bị null
             };
 
-            await _repository.AddAsync(application);
+            // 3. Lưu
+            await _applicationRepository.CreateApplicationAsync(newApplication);
+            await _applicationRepository.SaveChangesAsync();
+
+            return "Ứng tuyển thành công!";
         }
     }
 }

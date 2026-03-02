@@ -1,8 +1,10 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 using RecruitmentInterviewManagementSystem.Models;
+using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 
-namespace RecruitmentInterviewManagementSystem.Infrastructure.Repository
+namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
 {
     public class ApplicationRepository : IApplicationRepository
     {
@@ -13,15 +15,19 @@ namespace RecruitmentInterviewManagementSystem.Infrastructure.Repository
             _context = context;
         }
 
-        public async Task<bool> IsAlreadyAppliedAsync(Guid jobId, Guid candidateId)
+        public async Task<bool> CheckApplicationExistsAsync(Guid jobId, Guid candidateId)
         {
             return await _context.Applications
-                .AnyAsync(x => x.JobId == jobId && x.CandidateId == candidateId);
+                .AnyAsync(a => a.JobId == jobId && a.CandidateId == candidateId);
         }
 
-        public async Task AddAsync(Application application)
+        public async Task CreateApplicationAsync(Application application)
         {
             await _context.Applications.AddAsync(application);
+        }
+
+        public async Task SaveChangesAsync()
+        {
             await _context.SaveChangesAsync();
         }
     }

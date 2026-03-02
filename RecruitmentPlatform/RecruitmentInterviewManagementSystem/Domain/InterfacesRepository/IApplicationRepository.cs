@@ -4,7 +4,8 @@ namespace RecruitmentInterviewManagementSystem.Domain.InterfacesRepository
 {
     public interface IApplicationRepository
     {
-        Task<bool> IsAlreadyAppliedAsync(Guid jobId, Guid candidateId);
-        Task AddAsync(Application application);
+        Task<bool> CheckApplicationExistsAsync(Guid jobId, Guid candidateId);
+        Task CreateApplicationAsync(Application application);
+        Task SaveChangesAsync();
     }
 }
