@@ -44,7 +44,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
                 {
                     _logger.LogInformation($"Bug in backgroundService OutBoxMessage Type :{ex.Message}");
                 }
-                _logger.LogInformation("OutBoxBackground is running");
+                _logger.LogInformation("JobPostbackgroundservice is running");
+                // thư viQuartz.NET
             }
         }
     }
