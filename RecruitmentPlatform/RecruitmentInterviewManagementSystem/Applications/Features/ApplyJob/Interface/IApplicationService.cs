@@ -1,7 +1,7 @@
-namespace RecruitmentInterviewManagementSystem.Applications.Features.Application.Interface
+namespace RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Interface
 {
     public interface IApplicationService
     {
-        Task ApplyJobAsync(Guid candidateId, Guid jobId, Guid cvid);
+        Task ApplyJobAsync(Guid candidateId, Guid jobId, Guid cvId);
     }
 }

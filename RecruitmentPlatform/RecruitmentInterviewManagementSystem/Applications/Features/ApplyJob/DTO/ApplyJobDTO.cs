@@ -1,8 +1,8 @@
 using System;
 
-namespace RecruitmentInterviewManagementSystem.Applications.Features.Application.DTO
+namespace RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.DTO
 {
-    public class ApplyJobRequest
+    public class ApplyJobDTO
     {
         public Guid JobId { get; set; }
         public Guid Cvid { get; set; }

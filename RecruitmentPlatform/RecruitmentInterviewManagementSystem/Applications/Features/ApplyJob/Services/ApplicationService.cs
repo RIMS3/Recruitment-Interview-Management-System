@@ -1,8 +1,9 @@
-using RecruitmentInterviewManagementSystem.Applications.Features.Application.Interface;
+using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Interface;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 using RecruitmentInterviewManagementSystem.Models;
 
-namespace RecruitmentInterviewManagementSystem.Applications.Features.Application.Services
+namespace RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Services
 {
     public class ApplicationService : IApplicationService
     {
@@ -13,7 +14,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Application
             _repository = repository;
         }
 
-        public async Task ApplyJobAsync(Guid candidateId, Guid jobId, Guid cvid)
+        public async Task ApplyJobAsync(Guid candidateId, Guid jobId, Guid cvId)
         {
             var isApplied = await _repository
                 .IsAlreadyAppliedAsync(jobId, candidateId);
@@ -21,13 +22,14 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Application
             if (isApplied)
                 throw new Exception("You already applied this job.");
 
-            var application = new ApplicationEntity
+            var application = new Application
             {
+                Id = Guid.NewGuid(),
                 JobId = jobId,
                 CandidateId = candidateId,
-                Cvid = cvid,
-                Status = "Pending"
-                // AppliedAt t? set t? DB (getdate())
+                Cvid = cvId,
+                Status = (int)ApplicationStatus.Pending,
+                AppliedAt = DateTime.UtcNow
             };
 
             await _repository.AddAsync(application);

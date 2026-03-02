@@ -1,7 +1,10 @@
 using RecruitmentInterviewManagementSystem.Models;
 
-public interface IApplicationRepository
+namespace RecruitmentInterviewManagementSystem.Domain.InterfacesRepository
 {
-    Task<bool> IsAlreadyAppliedAsync(Guid jobId, Guid candidateId);
-    Task AddAsync(ApplicationEntity application);
+    public interface IApplicationRepository
+    {
+        Task<bool> IsAlreadyAppliedAsync(Guid jobId, Guid candidateId);
+        Task AddAsync(Application application);
+    }
 }
