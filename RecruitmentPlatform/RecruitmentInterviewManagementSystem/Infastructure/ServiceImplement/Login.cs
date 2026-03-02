@@ -19,13 +19,14 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             _jwtService = jwtService;
         }
 
-        public async Task<LoginResponse> LoginAsync(RequestLogin request)
+        public async Task<LoginResponse?> LoginAsync(RequestLogin request)
         {
             var user = await _context.Users
                 .FirstOrDefaultAsync(x => x.Email == request.Email);
 
+            // ❌ KHÔNG THROW EXCEPTION NỮA
             if (user == null)
-                throw new Exception("Invalid email or password");
+                return null;
 
             var isValid = PasswordHasher.VerifyPassword(
                 request.Password,
@@ -33,7 +34,11 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 user.Salt);
 
             if (!isValid)
-                throw new Exception("Invalid email or password");
+                return null;
+
+            // Optional: kiểm tra tài khoản bị khóa
+            if (user.IsActive == false)
+                return null;
 
             var userEntity = new UserEntity(
                 user.Id,
@@ -44,7 +49,6 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             );
 
             var accessToken = _jwtService.GenerateToken(userEntity);
-
             var refreshToken = Guid.NewGuid().ToString();
 
             var refreshTokenEntity = new RefreshToken

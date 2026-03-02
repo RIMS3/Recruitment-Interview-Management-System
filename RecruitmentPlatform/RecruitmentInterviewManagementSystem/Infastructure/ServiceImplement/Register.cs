@@ -24,7 +24,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 .FirstOrDefault(x => x.Email == request.Email);
 
             if (existingUser != null)
-                throw new Exception("Email already exists");
+                return null;
 
             var (hash, salt) = PasswordHasher.HashPassword(request.Password);
 
