@@ -38,7 +38,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Ser
                 SalaryMin = j.SalaryMin,
                 SalaryMax = j.SalaryMax,
                 ExpireAt = j.ExpireAt,
-                 Experience = j.Experience,
+                Experience = j.Experience,
                 JobType = (JobType?)j.JobType
 
             }).ToList();
