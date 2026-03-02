@@ -5,7 +5,6 @@ using System.Security.Claims;
 using System.Text;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
-using RecruitmentInterviewManagementSystem.Domain.Enums;
 
 namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 {
@@ -30,14 +29,13 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 Encoding.UTF8.GetBytes(secret));
 
             var credentials = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256);
+                key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role,((Role)user.Role).ToString()),
+                new Claim(ClaimTypes.Role, user.Role.ToString()), //fixed role claim type
                 new Claim("fullName", user.FullName)
             };
 
