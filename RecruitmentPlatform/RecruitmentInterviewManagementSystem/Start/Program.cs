@@ -16,6 +16,7 @@ using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using RecruitmentInterviewManagementSystem.API.DI;
+using RecruitmentInterviewManagementSystem.Infastructure.Workers;
 
 namespace RecruitmentInterviewManagementSystem.Start
 {
@@ -23,18 +24,14 @@ namespace RecruitmentInterviewManagementSystem.Start
     {
         public static void Main(string[] args)
         {
-
             DotNetEnv.Env.Load();
 
             var builder = WebApplication.CreateBuilder(args);
 
-
             builder.Services.AddDbContext<FakeTopcvContext>(options =>
             {
-
                 options.UseSqlServer(builder.Configuration["SQLURL"]);
             });
-
 
             builder.Services.AddCors(options =>
             {
@@ -47,22 +44,24 @@ namespace RecruitmentInterviewManagementSystem.Start
                 });
             });
 
-
             builder.Services.AddControllers();
 
+            // 👇 ĐOẠN CODE ĐÃ ĐƯỢC SỬA: Thêm bộ lọc loại trừ IHostedService
             builder.Services.Scan(scan => scan
                  .FromAssemblyOf<ApplicationMarker>()
-                 .AddClasses()
+                 .AddClasses(classes => classes.Where(type => !typeof(Microsoft.Extensions.Hosting.IHostedService).IsAssignableFrom(type)))
                  .AsImplementedInterfaces()
                  .WithScopedLifetime());
+            // 👆 KẾT THÚC ĐOẠN SỬA
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
 
             var jwtSecret = builder.Configuration["Authentication:Jwt:Secret"]
                             ?? throw new Exception("JWT Secret not configured");
             var jwtIssuer = builder.Configuration["Authentication:Jwt:Issuer"];
             var jwtAudience = builder.Configuration["Authentication:Jwt:Audience"];
+
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
@@ -84,12 +83,17 @@ namespace RecruitmentInterviewManagementSystem.Start
                         NameClaimType = JwtRegisteredClaimNames.Email
                     };
                 });
+
+            builder.Services.AddHostedService<AutoUnPost>();
+
             var app = builder.Build();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
@@ -97,6 +101,7 @@ namespace RecruitmentInterviewManagementSystem.Start
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
+
             app.Run();
         }
     }
