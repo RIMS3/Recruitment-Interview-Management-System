@@ -12,9 +12,8 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
     public class CandidateProfilesController : ControllerBase
     {
         private readonly FakeTopcvContext _db;
-        private readonly IMinIOCV _minioService; // Đã thêm khai báo Service
+        private readonly IMinIOCV _minioService;
 
-        // CHỈ DÙNG 1 CONSTRUCTOR DUY NHẤT để nhận cả DB và MinIO
         public CandidateProfilesController(FakeTopcvContext context, IMinIOCV minioService)
         {
             _db = context;
@@ -25,7 +24,18 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         public async Task<ActionResult<CandidateProfileDto>> GetProfile(Guid userId)
         {
             var profile = await _db.CandidateProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-            if (profile == null) return NotFound("Không tìm thấy hồ sơ ứng viên.");
+
+            // --- ĐÃ SỬA: TỰ ĐỘNG TẠO HỒ SƠ NẾU CHƯA CÓ ---
+            if (profile == null)
+            {
+                profile = new CandidateProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId
+                };
+                _db.CandidateProfiles.Add(profile);
+                await _db.SaveChangesAsync();
+            }
 
             // Sinh link ảnh có thời hạn 1 giờ để trả về cho React (Nếu ứng viên đã có ảnh)
             string? avatarUrl = string.IsNullOrEmpty(profile.AvatarUrl)
@@ -44,7 +54,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 DesiredSalary = profile.DesiredSalary,
                 JobLevel = profile.JobLevel,
                 Summary = profile.Summary,
-                AvatarUrl = avatarUrl 
+                AvatarUrl = avatarUrl
             });
         }
 
@@ -69,7 +79,6 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             return Ok(new { message = "Cập nhật hồ sơ thành công!" });
         }
 
-        // --- TÍNH NĂNG MỚI: TẢI ẢNH ĐẠI DIỆN ---
         [HttpPost("{id}/avatar")]
         public async Task<IActionResult> UploadAvatar(Guid id, IFormFile file)
         {
@@ -80,14 +89,11 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
 
             try
             {
-                // 1. Đẩy ảnh lên MinIO, nhận về tên file (vd: xyz.jpg)
                 string objectName = await _minioService.UploadAsync(file);
 
-                // 2. Lưu tên file vào Database
                 profile.AvatarUrl = objectName;
                 await _db.SaveChangesAsync();
 
-                // 3. Sinh ra link hiển thị trong 1 giờ để trả về cho React hiển thị ngay
                 string displayUrl = await _minioService.GetUrlImage("avatars", objectName);
 
                 return Ok(new { message = "Upload ảnh thành công!", avatarUrl = displayUrl });
