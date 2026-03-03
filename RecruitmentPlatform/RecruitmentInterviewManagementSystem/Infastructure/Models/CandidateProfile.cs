@@ -13,6 +13,8 @@ public partial class CandidateProfile
 
     public int? Gender { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
     public string? Address { get; set; }
 
     public int? ExperienceYears { get; set; }

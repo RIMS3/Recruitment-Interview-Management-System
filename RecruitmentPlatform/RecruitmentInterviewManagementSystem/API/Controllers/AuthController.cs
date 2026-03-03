@@ -56,11 +56,19 @@ public class AuthController : ControllerBase
         });
     }
 
-    [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    public async Task<IActionResult> Register(RegisterRequest request)
     {
         var result = await _register.RegisterAsync(request);
+
+        if (result == null)
+        {
+            return BadRequest(new
+            {
+                message = "Email đã tồn tại"
+            });
+        }
+
         return Ok(result);
     }
 
@@ -69,6 +77,15 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] RequestLogin request)
     {
         var result = await _login.LoginAsync(request);
+
+        if (result == null)
+        {
+            return Unauthorized(new
+            {
+                message = "Email hoặc mật khẩu không đúng"
+            });
+        }
+
         return Ok(result);
     }
 
