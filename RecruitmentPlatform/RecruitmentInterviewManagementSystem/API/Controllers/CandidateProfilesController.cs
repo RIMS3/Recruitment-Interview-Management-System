@@ -89,7 +89,13 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
 
             try
             {
-                string objectName = await _minioService.UploadAsync(file);
+                string objectName = await _minioService.UploadAsync(file, "avatars");
+
+                // Xóa ảnh cũ trên MinIO (nếu có) trước khi lưu tên ảnh mới
+                if (!string.IsNullOrEmpty(profile.AvatarUrl))
+                {
+                    await _minioService.DeleteAsync(profile.AvatarUrl, "avatars");
+                }
 
                 profile.AvatarUrl = objectName;
                 await _db.SaveChangesAsync();
