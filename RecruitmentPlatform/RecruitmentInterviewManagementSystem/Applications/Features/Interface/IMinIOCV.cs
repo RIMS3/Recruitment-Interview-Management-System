@@ -4,8 +4,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Interface
 {
     public interface IMinIOCV
     {
-        Task<string> UploadAsync(IFormFile file);
-        Task<string> GetUrlImage(string bucket, string imageName);
-        Task DeleteAsync(string objectName);
+        Task<string> UploadAsync(IFormFile file, string bucketName);
+        Task<string?> GetUrlImage(string bucketName, string objectName);
+        Task DeleteAsync(string objectName, string bucketName);
+        Task GetObjectStreamAsync(string bucketName, string objectName, Action<Stream> callback);
     }
 }
