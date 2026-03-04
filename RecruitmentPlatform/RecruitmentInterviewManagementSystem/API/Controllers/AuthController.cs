@@ -7,9 +7,9 @@ using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
 using RecruitmentInterviewManagementSystem.Domain.Enums;
-using RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement;
+using RecruitmentInterviewManagementSystem.Applications.Features.Auth.DTO;
 using RecruitmentInterviewManagementSystem.Models;
-
+using System.Security.Claims;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers;
 
@@ -24,11 +24,11 @@ public class AuthController : ControllerBase
     private readonly IJwtService _jwtService;
 
     public AuthController(
-    IGoogleAuthService googleAuthService,
-    IRegister register,
-    ILogin login,
-    FakeTopcvContext context,
-    IJwtService jwtService)
+        IGoogleAuthService googleAuthService,
+        IRegister register,
+        ILogin login,
+        FakeTopcvContext context,
+        IJwtService jwtService)
     {
         _googleAuthService = googleAuthService;
         _register = register;
@@ -36,15 +36,14 @@ public class AuthController : ControllerBase
         _context = context;
         _jwtService = jwtService;
     }
+
+    // ================= GOOGLE LOGIN =================
     [AllowAnonymous]
     [HttpPost("google")]
-
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         if (string.IsNullOrEmpty(request.IdToken))
-        {
             return BadRequest("IdToken is required");
-        }
 
         var result = await _googleAuthService.LoginAsync(request.IdToken);
 
@@ -56,6 +55,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    // ================= REGISTER =================
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
@@ -72,6 +72,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    // ================= LOGIN =================
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] RequestLogin request)
@@ -89,6 +90,61 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    // ================= SELECT ROLE =================
+    [Authorize]
+    [HttpPost("select-role")]
+    public async Task<IActionResult> SelectRole([FromBody] SelectRoleRequest request)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                 ?? User.FindFirst("id")
+                 ?? User.FindFirst("sub");
+
+        if (userIdClaim == null)
+        {
+            return Unauthorized("Token không chứa userId");
+        }
+
+        if (userIdClaim == null)
+            return Unauthorized("Không tìm thấy userId trong token");
+
+        if (!Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
+            return BadRequest("UserId trong token không hợp lệ");
+        }
+
+        var user = await _context.Users.FindAsync(userId);
+
+        if (user == null)
+            return NotFound("User không tồn tại");
+
+        if (user.Role != 0)
+            return BadRequest("Role đã được thiết lập trước đó");
+
+        if (request.Role != 2 && request.Role != 3)
+            return BadRequest("Role không hợp lệ");
+
+        user.Role = request.Role;
+
+        await _context.SaveChangesAsync();
+
+        var userEntity = new UserEntity(
+            user.Id,
+            user.Email,
+            user.FullName!,
+            (Role)user.Role,
+            user.IsActive ?? true
+        );
+
+        var newAccessToken = _jwtService.GenerateToken(userEntity);
+
+        return Ok(new
+        {
+            accessToken = newAccessToken,
+            role = user.Role
+        });
+    }
+
+    // ================= REFRESH TOKEN =================
     [AllowAnonymous]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -126,6 +182,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    // ================= LOGOUT =================
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
     {
