@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RecruitmentInterviewManagementSystem.Models;
 
@@ -8,6 +9,7 @@ public partial class EmployerProfile
     public Guid Id { get; set; }
 
     public Guid UserId { get; set; }
+    [NotMapped]
     public string? AvatarUrl { get; set; }
 
     public Guid CompanyId { get; set; }
