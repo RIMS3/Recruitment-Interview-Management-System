@@ -13,10 +13,12 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers;
 public class CvsController : ControllerBase
 {
     private readonly ICvService _cvService;
+    private readonly IMinIOCV _minIO;
 
-    public CvsController(ICvService cvService)
+    public CvsController(ICvService cvService, IMinIOCV minIOCV)
     {
         _cvService = cvService;
+        _minIO = minIOCV;
     }
 
     [HttpGet("candidate/{candidateId:guid}")]
@@ -80,5 +82,23 @@ public class CvsController : ControllerBase
         {
             return StatusCode(500, $"Lỗi khi tải file: {ex.Message}");
         }
+    }
+
+
+    [HttpGet("images")]
+    public async Task<IActionResult> GetImageCV()
+    {
+        var template1 = await _minIO.GetUrlImage("avatars", "template1.png");
+        var template2 = await _minIO.GetUrlImage("avatars", "template2.png");
+        var template3 = await _minIO.GetUrlImage("avatars", "template3.png");
+
+        var images = new List<string>
+    {
+        template1,
+        template2,
+        template3
+    };
+
+        return Ok(images);
     }
 }
