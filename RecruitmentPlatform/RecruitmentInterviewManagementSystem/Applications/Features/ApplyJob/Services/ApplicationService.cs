@@ -21,15 +21,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 
         public async Task<string> ApplyForJobAsync(ApplyJobRequestDto request)
         {
-            // 1. Kiểm tra đã apply chưa
-            var isAlreadyApplied = await _applicationRepository.CheckApplicationExistsAsync(request.JobId, request.CandidateId);
-
-            if (isAlreadyApplied)
-            {
-                throw new Exception("Bạn đã ứng tuyển vào vị trí này rồi.");
-            }
-
-            // 2. Tạo bản ghi Application
+            // 1. Tạo bản ghi Application (Bỏ qua bước check đã apply)
             var newApplication = new Application
             {
                 Id = Guid.NewGuid(),
@@ -41,7 +33,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 // Đảm bảo không có trường nào khác bị bắt buộc (Required) trong DB mà đang bị null
             };
 
-            // 3. Lưu
+            // 2. Lưu vào Database
             await _applicationRepository.CreateApplicationAsync(newApplication);
             await _applicationRepository.SaveChangesAsync();
 
