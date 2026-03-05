@@ -45,6 +45,8 @@ public partial class Cv
 
     public DateTime? UpdatedAt { get; set; }
 
+    //public string? TemplateId { get; set; }
+
     public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
 
     public virtual CandidateProfile Candidate { get; set; } = null!;

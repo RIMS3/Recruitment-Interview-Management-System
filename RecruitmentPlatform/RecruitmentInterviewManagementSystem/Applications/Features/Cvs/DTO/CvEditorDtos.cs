@@ -53,6 +53,19 @@
         public string FullName { get; set; } = string.Empty;
         public string? Position { get; set; }
         public string? Summary { get; set; }
+
+        // --- BỔ SUNG THÔNG TIN CÁ NHÂN ---
+        public string? Email { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Address { get; set; }
+        public DateOnly? Birthday { get; set; } // Nếu Entity của bạn dùng DateOnly thì sửa lại thành DateOnly? nhé
+        public int? Gender { get; set; }
+        public string? Nationality { get; set; }
+        public string? Field { get; set; }
+        public decimal? CurrentSalary { get; set; }
+        public int? ExperienceYears { get; set; }
+        // ---------------------------------
+
         public List<CvEducationItemDto> Educations { get; set; } = new();
         public List<CvExperienceItemDto> Experiences { get; set; } = new();
         public List<CvProjectItemDto> Projects { get; set; } = new();
@@ -65,6 +78,19 @@
         public string FullName { get; set; } = string.Empty;
         public string? Position { get; set; }
         public string? Summary { get; set; }
+
+        // --- BỔ SUNG THÔNG TIN CÁ NHÂN ---
+        public string? Email { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Address { get; set; }
+        public DateOnly? Birthday { get; set; } // Nếu Entity của bạn dùng DateOnly thì sửa lại thành DateOnly? nhé
+        public int? Gender { get; set; }
+        public string? Nationality { get; set; }
+        public string? Field { get; set; }
+        public decimal? CurrentSalary { get; set; }
+        public int? ExperienceYears { get; set; }
+        // ---------------------------------
+
         public List<CvEducationItemDto> Educations { get; set; } = new();
         public List<CvExperienceItemDto> Experiences { get; set; } = new();
         public List<CvProjectItemDto> Projects { get; set; } = new();

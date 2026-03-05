@@ -184,11 +184,23 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             var cv = await _cvRepository.GetCvByIdAsync(cvId);
             if (cv == null) return null;
 
+            // 1. MAPPING ĐẦY ĐỦ CÁC TRƯỜNG THÔNG TIN CÁ NHÂN VÀO ENTITY
             cv.FullName = request.FullName;
             cv.Position = request.Position;
             cv.EducationSummary = request.Summary;
+            cv.Email = request.Email;
+            cv.PhoneNumber = request.PhoneNumber;
+            cv.Address = request.Address;
+            cv.Birthday = request.Birthday;
+            cv.Gender = request.Gender;
+            cv.Nationality = request.Nationality;
+            cv.Field = request.Field;
+            cv.CurrentSalary = request.CurrentSalary;
+            cv.ExperienceYears = request.ExperienceYears;
+
             cv.UpdatedAt = DateTime.UtcNow;
 
+            // 2. MAPPING MẢNG (GIỮ NGUYÊN)
             var educations = request.Educations.Select(x => new CvEducation
             {
                 Id = x.Id ?? Guid.NewGuid(),
@@ -241,6 +253,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                     Level = x.Level
                 });
 
+            // Gọi Repository xử lý Update db
             await _cvRepository.UpdateEditorSectionsAsync(cv, educations, experiences, projects, certificates, skills);
 
             return await BuildEditorData(cv);
@@ -294,6 +307,18 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 FullName = cv.FullName,
                 Position = cv.Position,
                 Summary = cv.EducationSummary,
+
+                // BỔ SUNG TRẢ VỀ CHO FRONTEND ĐỂ F5 KHÔNG BỊ MẤT DỮ LIỆU
+                Email = cv.Email,
+                PhoneNumber = cv.PhoneNumber,
+                Address = cv.Address,
+                Birthday = cv.Birthday,
+                Gender = cv.Gender,
+                Nationality = cv.Nationality,
+                Field = cv.Field,
+                CurrentSalary = cv.CurrentSalary,
+                ExperienceYears = cv.ExperienceYears,
+
                 Educations = rawEducations.Select(x => new CvEducationItemDto
                 {
                     Id = x.Id,
