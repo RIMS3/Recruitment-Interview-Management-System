@@ -7,7 +7,6 @@ using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Entities;
 using RecruitmentInterviewManagementSystem.Domain.Enums;
-using RecruitmentInterviewManagementSystem.Applications.Features.Auth.DTO;
 using RecruitmentInterviewManagementSystem.Models;
 using System.Security.Claims;
 
@@ -51,7 +50,9 @@ public class AuthController : ControllerBase
         {
             accessToken = result.AccessToken,
             email = result.Email,
-            fullName = result.FullName
+            fullName = result.FullName,
+            userId = result.UserId, // ✅ Trả thêm userId
+            role = result.Role      // ✅ Trả thêm role
         });
     }
 
@@ -181,7 +182,7 @@ public class AuthController : ControllerBase
             accessToken = newAccessToken
         });
     }
-
+    [AllowAnonymous]
     // ================= LOGOUT =================
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
