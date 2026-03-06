@@ -122,19 +122,25 @@ public class AuthController : ControllerBase
 
         Guid? candidateId = null;
 
-        // ===== TẠO CANDIDATE PROFILE =====
+        // ===== CREATE CANDIDATE PROFILE =====
         if (request.Role == 2)
         {
-            var candidate = new CandidateProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id
-            };
+            var candidate = _context.CandidateProfiles
+                .FirstOrDefault(c => c.UserId == user.Id);
 
-            _context.CandidateProfiles.Add(candidate);
+            if (candidate == null)
+            {
+                candidate = new CandidateProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id
+                };
+
+                _context.CandidateProfiles.Add(candidate);
+            }
+
             candidateId = candidate.Id;
         }
-
         await _context.SaveChangesAsync();
 
         var userEntity = new UserEntity(
