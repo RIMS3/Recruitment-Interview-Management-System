@@ -15,7 +15,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         }
 
         [HttpGet("{jobId}")]
-        public async Task<IActionResult> GetJobDetail(Guid jobId)
+        public async Task<IActionResult> GetJobDetail([FromRoute]Guid jobId)
         {
             var job = await _service.GetJobPostDetailAsync(jobId);
 

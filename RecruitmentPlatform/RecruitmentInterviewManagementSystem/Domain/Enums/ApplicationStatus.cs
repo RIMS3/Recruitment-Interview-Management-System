@@ -1,4 +1,4 @@
-﻿namespace RecruitmentInterviewManagementSystem.Domain.Enums
+namespace RecruitmentInterviewManagementSystem.Domain.Enums
 {
     public enum ApplicationStatus
     {
