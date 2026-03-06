@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Minio.DataModel.Args;
 using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Models;
+using System.Security.Claims; // Thêm thư viện này để đọc Token
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers;
 
@@ -13,11 +15,46 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers;
 public class CvsController : ControllerBase
 {
     private readonly ICvService _cvService;
+    private readonly IMinIOCV _minIO;
+    private readonly FakeTopcvContext _context; // Bổ sung DbContext để chọc vào Database
 
-    public CvsController(ICvService cvService)
+    // Cập nhật Constructor để Inject FakeTopcvContext
+    public CvsController(ICvService cvService, IMinIOCV minIOCV, FakeTopcvContext context)
     {
         _cvService = cvService;
+        _minIO = minIOCV;
+        _context = context;
     }
+
+    // =======================================================
+    // API MỚI: LẤY CANDIDATE ID TỪ TOKEN
+    // =======================================================
+    [HttpGet("my-candidate-id")]
+    [Authorize] // Bắt buộc phải có token truyền lên
+    public async Task<IActionResult> GetMyCandidateId()
+    {
+        // 1. Lấy UserId từ Token
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("id")
+                         ?? User.FindFirst("sub");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
+            return Unauthorized("Không tìm thấy thông tin xác thực UserId hợp lệ trong Token.");
+        }
+
+        // 2. Tìm ID Ứng viên tương ứng trong DB
+        var candidate = await _context.CandidateProfiles.FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (candidate == null)
+        {
+            return NotFound("Không tìm thấy hồ sơ ứng viên cho tài khoản này. Vui lòng cập nhật vai trò!");
+        }
+
+        // 3. Trả về JSON chứa candidateId
+        return Ok(new { candidateId = candidate.Id });
+    }
+    // =======================================================
 
     [HttpGet("candidate/{candidateId:guid}")]
     public async Task<ActionResult<IEnumerable<CvSummaryDto>>> GetByCandidate(Guid candidateId)
@@ -80,5 +117,22 @@ public class CvsController : ControllerBase
         {
             return StatusCode(500, $"Lỗi khi tải file: {ex.Message}");
         }
+    }
+
+    [HttpGet("images")]
+    public async Task<IActionResult> GetImageCV()
+    {
+        var template1 = await _minIO.GetUrlImage("avatars", "template1.png");
+        var template2 = await _minIO.GetUrlImage("avatars", "template2.png");
+        var template3 = await _minIO.GetUrlImage("avatars", "template3.png");
+
+        var images = new List<string>
+        {
+            template1,
+            template2,
+            template3
+        };
+
+        return Ok(images);
     }
 }

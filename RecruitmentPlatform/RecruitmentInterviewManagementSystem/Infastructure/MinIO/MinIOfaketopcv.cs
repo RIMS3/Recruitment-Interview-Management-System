@@ -38,24 +38,37 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.MinIO
             return objectName;
         }
 
-        public async Task<string?> GetUrlImage(string bucketName, string objectName)
+        public async Task<string?> GetUrlImage(string bucket, string imageName)
         {
-            // Trả về null thay vì ảnh Pinterest. Frontend sẽ tự check để hiển thị UI phù hợp.
-            if (string.IsNullOrWhiteSpace(bucketName) || string.IsNullOrWhiteSpace(objectName))
-                return null;
+            if (string.IsNullOrWhiteSpace(bucket) || string.IsNullOrWhiteSpace(imageName))
+                return "https://i.pinimg.com/236x/8b/cf/15/8bcf15e8af97cbd56ab29f15e01933aa.jpg";
 
             try
             {
-                return await _clientMinIO.PresignedGetObjectAsync(
-                    new PresignedGetObjectArgs()
-                        .WithBucket(bucketName)
-                        .WithObject(objectName)
-                        .WithExpiry(60 * 60) // Link sống trong 1 giờ
+
+                await _clientMinIO.StatObjectAsync(
+                new StatObjectArgs()
+                        .WithBucket(bucket)
+                        .WithObject(imageName)
                 );
+
+                var url = await _clientMinIO.PresignedGetObjectAsync(
+                    new PresignedGetObjectArgs()
+                        .WithBucket(bucket)
+                        .WithObject(imageName)
+                        .WithExpiry(60 * 60)
+                );
+
+                return url;
             }
-            catch (Exception)
+            catch (Minio.Exceptions.ObjectNotFoundException)
             {
-                return null;
+                return "https://i.pinimg.com/236x/8b/cf/15/8bcf15e8af97cbd56ab29f15e01933aa.jpg";
+            }
+            catch (Exception ex)
+            {
+
+                return "https://i.pinimg.com/236x/8b/cf/15/8bcf15e8af97cbd56ab29f15e01933aa.jpg";
             }
         }
 
