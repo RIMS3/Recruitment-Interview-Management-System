@@ -92,7 +92,6 @@ public class AuthController : ControllerBase
     }
 
     // ================= SELECT ROLE =================
-    // ================= SELECT ROLE =================
     [Authorize]
     [HttpPost("select-role")]
     public async Task<IActionResult> SelectRole([FromBody] SelectRoleRequest request)
@@ -102,7 +101,7 @@ public class AuthController : ControllerBase
                  ?? User.FindFirst("sub");
 
         if (userIdClaim == null)
-            return Unauthorized("Không tìm thấy userId trong token");
+            return Unauthorized("Token không chứa userId");
 
         if (!Guid.TryParse(userIdClaim.Value, out Guid userId))
             return BadRequest("UserId trong token không hợp lệ");
@@ -118,53 +117,25 @@ public class AuthController : ControllerBase
         if (request.Role != 2 && request.Role != 3)
             return BadRequest("Role không hợp lệ");
 
-        // ===== SET ROLE =====
+        // SET ROLE
         user.Role = request.Role;
 
-        // ===== CREATE CANDIDATE PROFILE =====
+        Guid? candidateId = null;
+
+        // ===== TẠO CANDIDATE PROFILE =====
         if (request.Role == 2)
         {
-            var existingCandidate = await _context.CandidateProfiles
-                .FirstOrDefaultAsync(x => x.UserId == user.Id);
-
-            if (existingCandidate == null)
+            var candidate = new CandidateProfile
             {
-                var candidate = new CandidateProfile
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id
-                };
+                Id = Guid.NewGuid(),
+                UserId = user.Id
+            };
 
-                _context.CandidateProfiles.Add(candidate);
-            }
-        }
-
-        // ===== CREATE EMPLOYER PROFILE =====
-        if (request.Role == 3)
-        {
-            var existingEmployer = await _context.EmployerProfiles
-                .FirstOrDefaultAsync(x => x.UserId == user.Id);
-
-            if (existingEmployer == null)
-            {
-                var employer = new EmployerProfile
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id
-                };
-
-                _context.EmployerProfiles.Add(employer);
-            }
+            _context.CandidateProfiles.Add(candidate);
+            candidateId = candidate.Id;
         }
 
         await _context.SaveChangesAsync();
-
-        // ===== GET PROFILE ID =====
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(x => x.UserId == user.Id);
-
-        var employerProfile = await _context.EmployerProfiles
-            .FirstOrDefaultAsync(x => x.UserId == user.Id);
 
         var userEntity = new UserEntity(
             user.Id,
@@ -179,7 +150,8 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             accessToken = newAccessToken,
-            role = user.Role
+            role = user.Role,
+            candidateId = candidateId
         });
     }
 
