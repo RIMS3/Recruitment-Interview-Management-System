@@ -101,17 +101,10 @@ public class AuthController : ControllerBase
                  ?? User.FindFirst("sub");
 
         if (userIdClaim == null)
-        {
             return Unauthorized("Token không chứa userId");
-        }
-
-        if (userIdClaim == null)
-            return Unauthorized("Không tìm thấy userId trong token");
 
         if (!Guid.TryParse(userIdClaim.Value, out Guid userId))
-        {
             return BadRequest("UserId trong token không hợp lệ");
-        }
 
         var user = await _context.Users.FindAsync(userId);
 
@@ -124,8 +117,30 @@ public class AuthController : ControllerBase
         if (request.Role != 2 && request.Role != 3)
             return BadRequest("Role không hợp lệ");
 
+        // SET ROLE
         user.Role = request.Role;
 
+        Guid? candidateId = null;
+
+        // ===== CREATE CANDIDATE PROFILE =====
+        if (request.Role == 2)
+        {
+            var candidate = _context.CandidateProfiles
+                .FirstOrDefault(c => c.UserId == user.Id);
+
+            if (candidate == null)
+            {
+                candidate = new CandidateProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id
+                };
+
+                _context.CandidateProfiles.Add(candidate);
+            }
+
+            candidateId = candidate.Id;
+        }
         await _context.SaveChangesAsync();
 
         var userEntity = new UserEntity(
@@ -141,7 +156,8 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             accessToken = newAccessToken,
-            role = user.Role
+            role = user.Role,
+            candidateId = candidateId
         });
     }
 

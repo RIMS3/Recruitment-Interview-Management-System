@@ -9,6 +9,7 @@
         public int? ExperienceYears { get; set; }
         public bool IsDefault { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string? TemplateId { get; set; }
     }
 
     public class CvDetailDto : CvSummaryDto
@@ -45,6 +46,7 @@
         public decimal? CurrentSalary { get; set; }
         public bool IsDefault { get; set; }
         public IFormFile? File { get; set; }
+        public string? TemplateId { get; set; }
     }
 
     public class UpdateCvRequest
@@ -63,5 +65,6 @@
         public decimal? CurrentSalary { get; set; }
         public bool IsDefault { get; set; }
         public IFormFile? File { get; set; }
+        public string? TemplateId { get; set; }
     }
 }

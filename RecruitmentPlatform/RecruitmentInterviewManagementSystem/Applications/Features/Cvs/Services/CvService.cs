@@ -30,7 +30,8 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Position = cv.Position,
                 ExperienceYears = cv.ExperienceYears,
                 IsDefault = cv.IsDefault ?? false,
-                UpdatedAt = cv.UpdatedAt
+                UpdatedAt = cv.UpdatedAt,
+                TemplateId = cv.TemplateId // 👉 1. THÊM DÒNG NÀY: Trả TemplateId về cho trang Manage-CV
             });
         }
 
@@ -67,6 +68,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Field = request.Field,
                 CurrentSalary = request.CurrentSalary,
                 IsDefault = request.IsDefault,
+                TemplateId = request.TemplateId ?? "tpl-1", // 👉 2. THÊM DÒNG NÀY: Hứng mã Mẫu khi Tạo mới CV
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -110,6 +112,13 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             cv.Field = request.Field;
             cv.CurrentSalary = request.CurrentSalary;
             cv.IsDefault = request.IsDefault;
+
+            // 👉 3. THÊM ĐOẠN NÀY: Cập nhật TemplateId nếu có thay đổi
+            if (!string.IsNullOrWhiteSpace(request.TemplateId))
+            {
+                cv.TemplateId = request.TemplateId;
+            }
+
             cv.UpdatedAt = DateTime.UtcNow;
 
             if (request.File != null && request.File.Length > 0)
@@ -184,11 +193,29 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             var cv = await _cvRepository.GetCvByIdAsync(cvId);
             if (cv == null) return null;
 
+            // 1. MAPPING ĐẦY ĐỦ CÁC TRƯỜNG THÔNG TIN CÁ NHÂN VÀO ENTITY
             cv.FullName = request.FullName;
             cv.Position = request.Position;
             cv.EducationSummary = request.Summary;
+            cv.Email = request.Email;
+            cv.PhoneNumber = request.PhoneNumber;
+            cv.Address = request.Address;
+            cv.Birthday = request.Birthday;
+            cv.Gender = request.Gender;
+            cv.Nationality = request.Nationality;
+            cv.Field = request.Field;
+            cv.CurrentSalary = request.CurrentSalary;
+            cv.ExperienceYears = request.ExperienceYears;
+
+            // 👉 4. THÊM ĐOẠN NÀY: Hứng TemplateId khi nhấn nút "Lưu CV"
+            if (!string.IsNullOrWhiteSpace(request.TemplateId))
+            {
+                cv.TemplateId = request.TemplateId;
+            }
+
             cv.UpdatedAt = DateTime.UtcNow;
 
+            // 2. MAPPING MẢNG (GIỮ NGUYÊN)
             var educations = request.Educations.Select(x => new CvEducation
             {
                 Id = x.Id ?? Guid.NewGuid(),
@@ -241,6 +268,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                     Level = x.Level
                 });
 
+            // Gọi Repository xử lý Update db
             await _cvRepository.UpdateEditorSectionsAsync(cv, educations, experiences, projects, certificates, skills);
 
             return await BuildEditorData(cv);
@@ -275,7 +303,8 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 MimeType = cv.MimeType,
                 IsDefault = cv.IsDefault ?? false,
                 CreatedAt = cv.CreatedAt,
-                UpdatedAt = cv.UpdatedAt
+                UpdatedAt = cv.UpdatedAt,
+                TemplateId = cv.TemplateId // 👉 5. THÊM DÒNG NÀY
             };
         }
 
@@ -294,6 +323,20 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 FullName = cv.FullName,
                 Position = cv.Position,
                 Summary = cv.EducationSummary,
+
+                // BỔ SUNG TRẢ VỀ CHO FRONTEND ĐỂ F5 KHÔNG BỊ MẤT DỮ LIỆU
+                Email = cv.Email,
+                PhoneNumber = cv.PhoneNumber,
+                Address = cv.Address,
+                Birthday = cv.Birthday,
+                Gender = cv.Gender,
+                Nationality = cv.Nationality,
+                Field = cv.Field,
+                CurrentSalary = cv.CurrentSalary,
+                ExperienceYears = cv.ExperienceYears,
+
+                TemplateId = cv.TemplateId, // 👉 6. THÊM DÒNG NÀY: Trả mã Mẫu về cho React Editor (CreateCV)
+
                 Educations = rawEducations.Select(x => new CvEducationItemDto
                 {
                     Id = x.Id,
