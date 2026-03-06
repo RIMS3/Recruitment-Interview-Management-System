@@ -30,7 +30,8 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Position = cv.Position,
                 ExperienceYears = cv.ExperienceYears,
                 IsDefault = cv.IsDefault ?? false,
-                UpdatedAt = cv.UpdatedAt
+                UpdatedAt = cv.UpdatedAt,
+                TemplateId = cv.TemplateId // 👉 1. THÊM DÒNG NÀY: Trả TemplateId về cho trang Manage-CV
             });
         }
 
@@ -67,6 +68,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Field = request.Field,
                 CurrentSalary = request.CurrentSalary,
                 IsDefault = request.IsDefault,
+                TemplateId = request.TemplateId ?? "tpl-1", // 👉 2. THÊM DÒNG NÀY: Hứng mã Mẫu khi Tạo mới CV
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -110,6 +112,13 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             cv.Field = request.Field;
             cv.CurrentSalary = request.CurrentSalary;
             cv.IsDefault = request.IsDefault;
+
+            // 👉 3. THÊM ĐOẠN NÀY: Cập nhật TemplateId nếu có thay đổi
+            if (!string.IsNullOrWhiteSpace(request.TemplateId))
+            {
+                cv.TemplateId = request.TemplateId;
+            }
+
             cv.UpdatedAt = DateTime.UtcNow;
 
             if (request.File != null && request.File.Length > 0)
@@ -197,6 +206,12 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             cv.Field = request.Field;
             cv.CurrentSalary = request.CurrentSalary;
             cv.ExperienceYears = request.ExperienceYears;
+
+            // 👉 4. THÊM ĐOẠN NÀY: Hứng TemplateId khi nhấn nút "Lưu CV"
+            if (!string.IsNullOrWhiteSpace(request.TemplateId))
+            {
+                cv.TemplateId = request.TemplateId;
+            }
 
             cv.UpdatedAt = DateTime.UtcNow;
 
@@ -288,7 +303,8 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 MimeType = cv.MimeType,
                 IsDefault = cv.IsDefault ?? false,
                 CreatedAt = cv.CreatedAt,
-                UpdatedAt = cv.UpdatedAt
+                UpdatedAt = cv.UpdatedAt,
+                TemplateId = cv.TemplateId // 👉 5. THÊM DÒNG NÀY
             };
         }
 
@@ -318,6 +334,8 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Field = cv.Field,
                 CurrentSalary = cv.CurrentSalary,
                 ExperienceYears = cv.ExperienceYears,
+
+                TemplateId = cv.TemplateId, // 👉 6. THÊM DÒNG NÀY: Trả mã Mẫu về cho React Editor (CreateCV)
 
                 Educations = rawEducations.Select(x => new CvEducationItemDto
                 {

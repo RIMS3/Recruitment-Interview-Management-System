@@ -53,6 +53,7 @@
         public string FullName { get; set; } = string.Empty;
         public string? Position { get; set; }
         public string? Summary { get; set; }
+        public string? TemplateId { get; set; }
 
         // --- BỔ SUNG THÔNG TIN CÁ NHÂN ---
         public string? Email { get; set; }
@@ -78,6 +79,7 @@
         public string FullName { get; set; } = string.Empty;
         public string? Position { get; set; }
         public string? Summary { get; set; }
+        public string? TemplateId { get; set; }
 
         // --- BỔ SUNG THÔNG TIN CÁ NHÂN ---
         public string? Email { get; set; }
