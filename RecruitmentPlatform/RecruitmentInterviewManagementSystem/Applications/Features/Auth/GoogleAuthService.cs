@@ -23,7 +23,6 @@ public class GoogleAuthService : IGoogleAuthService
     public async Task<LoginResponse> LoginAsync(string idToken)
     {
         var googleUser = await _googleValidator.ValidateAsync(idToken);
-
         var user = await _userRepository.GetByEmailAsync(googleUser.Email);
 
         if (user == null)
@@ -38,7 +37,9 @@ public class GoogleAuthService : IGoogleAuthService
         {
             AccessToken = token,
             Email = user.Email,
-            FullName = user.FullName
+            FullName = user.FullName,
+            UserId = user.Id,         // ✅ Gán UserId
+            Role = (int)user.Role      // ✅ Gán Role (ép kiểu về int)
         };
     }
 }

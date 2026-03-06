@@ -34,7 +34,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
                 Email = email,
                 FullName = fullName,
                 IsActive = true,
-                Role = (int)Role.CANDIDATE, //set role mac dinh la candidate
+                Role = 0,
                 PasswordHash = Guid.NewGuid().ToString()
             };
 
@@ -50,7 +50,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
                 user.Id,
                 user.Email,
                 user.FullName,
-                (Role)(user.Role ?? (int)Role.CANDIDATE),
+                (Role)(user.Role ?? 0),
                 user.IsActive ?? false
             );
         }
