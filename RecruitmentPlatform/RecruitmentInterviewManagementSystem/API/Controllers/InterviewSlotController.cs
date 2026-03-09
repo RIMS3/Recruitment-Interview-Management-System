@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentInterviewManagementSystem.Applications.Features.BookingInterviewSlot.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.BookingInterviewSlot.Interfaces;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
 {
+    
     [Route("api/interview")]
     [ApiController]
     public class InterviewSlotController : ControllerBase

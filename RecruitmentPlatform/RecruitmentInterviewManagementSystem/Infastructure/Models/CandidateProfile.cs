@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RecruitmentInterviewManagementSystem.Infastructure.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -37,4 +38,6 @@ public partial class CandidateProfile
     public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
 
     public virtual User User { get; set; } = null!;
+
+    public virtual ICollection<BookingLink> BookingLinks { get; set; } = new List<BookingLink>();
 }
