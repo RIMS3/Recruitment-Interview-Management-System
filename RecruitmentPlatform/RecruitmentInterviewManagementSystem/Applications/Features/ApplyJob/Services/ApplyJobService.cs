@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 {
-    public class ApplicationService : IApplicationService
+    public class ApplyJobService : IApplyJobService
     {
-        private readonly IApplicationRepository _applicationRepository;
+        private readonly IApplyJobRepository _applyJobRepository;
         private readonly FakeTopcvContext _db;
 
-        public ApplicationService(IApplicationRepository applicationRepository,FakeTopcvContext fakeTopcvContext)
+        public ApplyJobService(IApplyJobRepository applyJobRepository, FakeTopcvContext fakeTopcvContext)
         {
-            _applicationRepository = applicationRepository;
+            _applyJobRepository = applyJobRepository;
             _db = fakeTopcvContext;
         }
         public async Task<ResultStatus> ApplyForJobAsync(ApplyJobRequestDto request)
