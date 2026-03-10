@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentInterviewManagementSystem.Applications.DTOs;
-using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.DTO;
-using RecruitmentInterviewManagementSystem.Applications.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Features.Application.Interfaces;
+using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.DTO;
+using RecruitmentInterviewManagementSystem.Applications.Features.ApplyJob.Interface;
+using RecruitmentInterviewManagementSystem.Applications.Interface;
+using RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement;
 using System;
 using System.Threading.Tasks;
 
@@ -14,20 +16,21 @@ namespace RecruitmentInterviewManagementSystem.Controllers
     {
         private readonly IApplicationService _applicationService;
         private readonly IGetCandidateID _getIdCadidate;
+        private readonly IApplyJobService _applyJobService;
 
-        public ApplicationController(
-        IApplicationService applicationService,
-        IGetCandidateID getCandidateID)
+
+        public ApplicationController(IApplyJobService applyJobService, IGetCandidateID getCandidateID, IApplicationService applicationService)
         {
-            _applicationService = applicationService;
+            _applyJobService = applyJobService;
             _getIdCadidate = getCandidateID;
+            _applicationService = applicationService;
         }
 
         // APPLY JOB
         [HttpPost("apply")]
         public async Task<IActionResult> Apply([FromBody] ApplyJobRequestDto request)
         {
-            var result = await _applicationService.ApplyForJobAsync(request);
+            var result = await _applyJobService.ApplyForJobAsync(request);
 
             return Ok(new
             {
@@ -65,6 +68,6 @@ namespace RecruitmentInterviewManagementSystem.Controllers
             {
                 cvId = application.Cvid
             });
+            }
         }
-    }
 }

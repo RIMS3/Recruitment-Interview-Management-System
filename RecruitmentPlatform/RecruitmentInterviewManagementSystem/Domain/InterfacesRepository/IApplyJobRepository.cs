@@ -1,0 +1,12 @@
+using RecruitmentInterviewManagementSystem.Models;
+
+namespace RecruitmentInterviewManagementSystem.Domain.InterfacesRepository
+{
+    public interface IApplyJobRepository
+    {
+        Task<bool> CheckApplicationExistsAsync(Guid jobId, Guid candidateId);
+        Task CreateApplicationAsync(Application application);
+
+        Task SaveChangesAsync();
+    }
+}
