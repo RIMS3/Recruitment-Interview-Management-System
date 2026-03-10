@@ -94,5 +94,26 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
 
             return NoContent();
         }
+        // =====================================================
+        // GET CV BY APPLICATION
+        // =====================================================
+        [HttpGet("{applicationId:guid}/cv")]
+        public async Task<IActionResult> GetCvByApplication(Guid applicationId)
+        {
+            var application = await _context.Applications
+                .Include(a => a.Cv)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (application == null)
+                return NotFound("Application not found");
+
+            if (application.Cv == null)
+                return BadRequest("Candidate has not uploaded CV");
+
+            return Ok(new
+            {
+                cvId = application.Cvid
+            });
+        }
     }
 }

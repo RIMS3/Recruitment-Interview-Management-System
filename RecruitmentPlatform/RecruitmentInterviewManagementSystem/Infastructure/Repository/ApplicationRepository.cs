@@ -1,4 +1,4 @@
-using System;
+    using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Models;
@@ -25,7 +25,11 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
         {
             await _context.Applications.AddAsync(application);
         }
-
+        public async Task<Application?> GetApplicationByIdAsync(Guid applicationId)
+        {
+            return await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+        }
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

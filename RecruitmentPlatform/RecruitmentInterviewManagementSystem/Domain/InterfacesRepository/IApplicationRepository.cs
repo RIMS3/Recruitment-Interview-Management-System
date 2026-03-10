@@ -6,6 +6,8 @@ namespace RecruitmentInterviewManagementSystem.Domain.InterfacesRepository
     {
         Task<bool> CheckApplicationExistsAsync(Guid jobId, Guid candidateId);
         Task CreateApplicationAsync(Application application);
+        Task<Application?> GetApplicationByIdAsync(Guid applicationId);
+
         Task SaveChangesAsync();
     }
 }
