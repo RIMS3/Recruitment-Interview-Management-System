@@ -17,8 +17,6 @@ using RecruitmentInterviewManagementSystem.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using RecruitmentInterviewManagementSystem.API.DI;
 using RecruitmentInterviewManagementSystem.Infastructure.Workers;
 
 using Minio;

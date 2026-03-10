@@ -38,6 +38,30 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                     b.ToTable("JobSkills", (string)null);
                 });
 
+            modelBuilder.Entity("RecruitmentInterviewManagementSystem.Infastructure.Models.Banner", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Banners");
+                });
+
             modelBuilder.Entity("RecruitmentInterviewManagementSystem.Infastructure.Models.BookingLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -175,9 +199,6 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                     b.Property<string>("Address")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("AvatarUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("CurrentSalary")
                         .HasColumnType("decimal(18, 2)");

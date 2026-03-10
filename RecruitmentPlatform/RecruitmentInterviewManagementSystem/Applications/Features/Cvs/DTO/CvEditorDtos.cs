@@ -72,6 +72,8 @@
         public List<CvProjectItemDto> Projects { get; set; } = new();
         public List<CvCertificateItemDto> Certificates { get; set; } = new();
         public List<CvSkillItemDto> Skills { get; set; } = new();
+        public string? FileName { get; internal set; }
+        public string? FileUrl { get; internal set; }
     }
 
     public class UpdateCvEditorRequest

@@ -1,4 +1,5 @@
-﻿using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.DTO;
+﻿using Microsoft.EntityFrameworkCore;
+using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
@@ -11,12 +12,14 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
         private readonly ICvRepository _cvRepository;
         private readonly IMinIOCV _minioService;
         private readonly IConfiguration _configuration;
+        private readonly FakeTopcvContext _context;
 
-        public CvService(ICvRepository cvRepository, IMinIOCV minioService, IConfiguration configuration)
+        public CvService(ICvRepository cvRepository, IMinIOCV minioService, IConfiguration configuration, FakeTopcvContext context)
         {
             _cvRepository = cvRepository;
             _minioService = minioService;
             _configuration = configuration;
+            _context = context;
         }
 
         public async Task<IEnumerable<CvSummaryDto>> GetCvsByCandidateAsync(Guid candidateId)
@@ -316,6 +319,12 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             var rawCertificates = await _cvRepository.GetCertificatesAsync(cv.Id);
             var rawSkills = await _cvRepository.GetSkillsAsync(cv.Id);
 
+            // 👉 1. BỔ SUNG XỬ LÝ LẤY LINK ẢNH TỪ MINIO
+            var fileBucket = _configuration["Minio:CvBucket"] ?? "cvs";
+            var displayFileUrl = string.IsNullOrWhiteSpace(cv.FileUrl)
+                ? null
+                : await _minioService.GetUrlImage(fileBucket, cv.FileUrl);
+
             return new CvEditorDataDto
             {
                 CvId = cv.Id,
@@ -335,7 +344,11 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 CurrentSalary = cv.CurrentSalary,
                 ExperienceYears = cv.ExperienceYears,
 
-                TemplateId = cv.TemplateId, // 👉 6. THÊM DÒNG NÀY: Trả mã Mẫu về cho React Editor (CreateCV)
+                TemplateId = cv.TemplateId,
+
+                // 👉 2. THÊM 2 DÒNG NÀY ĐỂ TRẢ VỀ CHO REACT TẠO ẢNH PREVIEW
+                FileName = cv.FileName,
+                FileUrl = displayFileUrl,
 
                 Educations = rawEducations.Select(x => new CvEducationItemDto
                 {
@@ -377,6 +390,50 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                     SkillName = x.SkillName,
                     Level = x.Level
                 }).ToList()
+            };
+        }
+        public async Task<CvAvatarResponseDto> UpdateAvatarAsync(Guid cvId, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("Vui lòng chọn một file ảnh hợp lệ.");
+
+            // 1. Tìm CV (Đổi .Cvs thành DbSet tương ứng trong context của bạn nếu khác)
+            var cv = await _context.Cvs.FindAsync(cvId);
+            if (cv == null)
+                throw new KeyNotFoundException("Không tìm thấy CV.");
+
+            string bucketName = "cvs"; // Có thể đổi thành "avatars" nếu muốn
+
+            // 2. Xóa ảnh cũ trên MinIO (nếu có)
+            if (!string.IsNullOrWhiteSpace(cv.FileName))
+            {
+                await _minioService.DeleteAsync(cv.FileName, bucketName);
+            }
+
+            // 3. Upload ảnh mới
+            string newObjectName = await _minioService.UploadAsync(file, bucketName);
+
+            // 4. Cập nhật Database
+            cv.FileName = file.FileName; // Lưu tên gốc (VD: anh-the.jpg)
+            cv.FileUrl = newObjectName;  // Lưu mã GUID của MinIO vào cột FileUrl
+            cv.MimeType = file.ContentType;
+            cv.UpdatedAt = DateTime.UtcNow;
+
+            _context.Cvs.Update(cv);
+            await _context.SaveChangesAsync();
+
+            // 5. Lấy URL Presigned từ MinIO
+            string fileUrl = await _minioService.GetUrlImage(bucketName, newObjectName);
+
+            // 6. Trả về DTO
+            return new CvAvatarResponseDto
+            {
+                Id = cv.Id,
+                CandidateId = cv.CandidateId,
+                FileName = cv.FileName,
+                FileUrl = fileUrl,
+                MimeType = cv.MimeType,
+                UpdatedAt = cv.UpdatedAt
             };
         }
     }
