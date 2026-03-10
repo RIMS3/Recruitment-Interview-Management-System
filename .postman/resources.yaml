@@ -1,0 +1,6 @@
+# Use this workspace to collaborate
+workspace:
+  id: 3928ce41-b55a-4531-8d39-c4f5d3e823cd
+localResources:
+  specs:
+    - ..\RecruitmentPlatform\RecruitmentInterviewManagementSystem\obj\Debug\net8.0\EndpointInfo\RecruitmentInterviewManagementSystem.json

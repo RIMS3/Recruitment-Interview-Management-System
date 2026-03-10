@@ -1,4 +1,4 @@
-    using System;
+using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Models;
@@ -6,11 +6,11 @@ using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 
 namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
 {
-    public class ApplicationRepository : IApplicationRepository
+    public class ApplyJobRepository : IApplyJobRepository
     {
         private readonly FakeTopcvContext _context;
 
-        public ApplicationRepository(FakeTopcvContext context)
+        public ApplyJobRepository(FakeTopcvContext context)
         {
             _context = context;
         }
@@ -24,11 +24,6 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Repository
         public async Task CreateApplicationAsync(Application application)
         {
             await _context.Applications.AddAsync(application);
-        }
-        public async Task<Application?> GetApplicationByIdAsync(Guid applicationId)
-        {
-            return await _context.Applications
-                .FirstOrDefaultAsync(a => a.Id == applicationId);
         }
         public async Task SaveChangesAsync()
         {
