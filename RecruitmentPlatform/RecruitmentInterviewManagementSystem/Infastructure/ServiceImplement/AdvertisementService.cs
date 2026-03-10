@@ -38,7 +38,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                     Title = ad.Title,
                     ImageUrl = imageUrl ?? "",
                     Duration = ad.Duration,
-                    LinkUrl = ad.LinkUrl
+                    LinkUrl = ad.LinkUrl,
+                    IsPopup = ad.IsPopup
                 });
             }
             return dtos;
@@ -58,7 +59,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 Title = ad.Title,
                 ImageUrl = imageUrl ?? "",
                 Duration = ad.Duration,
-                LinkUrl = ad.LinkUrl
+                LinkUrl = ad.LinkUrl,
+                IsPopup = ad.IsPopup
             };
         }
 
@@ -73,7 +75,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 Title = dto.Title,
                 ImageName = fileName,
                 Duration = dto.Duration,
-                LinkUrl = dto.LinkUrl
+                LinkUrl = dto.LinkUrl,
+                IsPopup = dto.IsPopup
             };
 
             _context.Advertisements.Add(ad);
@@ -88,7 +91,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 Title = ad.Title,
                 ImageUrl = imageUrl ?? "",
                 Duration = ad.Duration,
-                LinkUrl = ad.LinkUrl
+                LinkUrl = ad.LinkUrl,
+                IsPopup = ad.IsPopup
             };
         }
 
@@ -100,6 +104,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             ad.Title = dto.Title;
             ad.Duration = dto.Duration;
             ad.LinkUrl = dto.LinkUrl;
+            ad.IsPopup = dto.IsPopup;
 
             // Nếu có cập nhật ảnh mới
             if (dto.ImageFile != null && dto.ImageFile.Length > 0)

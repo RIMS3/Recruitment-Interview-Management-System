@@ -56,6 +56,9 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsPopup")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LinkUrl")
                         .HasColumnType("nvarchar(max)");
 
