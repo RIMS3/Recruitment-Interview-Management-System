@@ -14,5 +14,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Interfa
         // Editor Logic
         Task<CvEditorDataDto?> GetEditorDataAsync(Guid cvId);
         Task<CvEditorDataDto?> UpdateEditorDataAsync(Guid cvId, UpdateCvEditorRequest request);
+        Task<CvAvatarResponseDto> UpdateAvatarAsync(Guid cvId, IFormFile file);
     }
 }

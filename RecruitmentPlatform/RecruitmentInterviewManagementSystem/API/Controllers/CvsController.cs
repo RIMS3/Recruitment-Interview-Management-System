@@ -135,4 +135,28 @@ public class CvsController : ControllerBase
 
         return Ok(images);
     }
+
+    [HttpPut("{id:guid}/avatar")]
+    //[Authorize] // Nhớ mở Comment cái này nếu bắt buộc user login mới được đổi ảnh
+    public async Task<IActionResult> UploadAvatar(Guid id, IFormFile file)
+    {
+        try
+        {
+            var result = await _cvService.UpdateAvatarAsync(id, file);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Có thể dùng GlobalExceptions (folder bạn có sẵn) để bắt lỗi này thay vì try-catch ở đây
+            return StatusCode(500, $"Lỗi server: {ex.Message}");
+        }
+    }
 }

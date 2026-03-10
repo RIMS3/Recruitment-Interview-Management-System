@@ -62,6 +62,8 @@ public partial class FakeTopcvContext : DbContext
     public virtual DbSet<Interviews> Interview { get; set; }
 
     public virtual DbSet<InterviewsSlots> InterviewsSlots { get; set; }
+    public virtual DbSet<Banner> Banners { get; set; }
+
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
