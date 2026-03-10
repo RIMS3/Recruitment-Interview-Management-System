@@ -62,25 +62,22 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         {
             if (file == null || file.Length == 0) return BadRequest("Vui lòng chọn ảnh.");
 
-            var profile = await _db.CandidateProfiles.FindAsync(id);
+            var profile = await _db.EmployerProfiles.FindAsync(id);
+
             if (profile == null) return NotFound("Không tìm thấy hồ sơ.");
 
             try
             {
-                // --- THÊM MỚI: Xóa ảnh cũ trên MinIO trước khi lưu ảnh mới ---
                 if (!string.IsNullOrEmpty(profile.AvatarUrl))
                 {
                     await _minioService.DeleteAsync(profile.AvatarUrl, "avatars");
                 }
 
-                // 1. Đẩy ảnh lên Docker MinIO (Đã thêm chữ "avatars")
                 string objectName = await _minioService.UploadAsync(file, "avatars");
 
-                // 2. Lưu tên file vào Database
                 profile.AvatarUrl = objectName;
                 await _db.SaveChangesAsync();
 
-                // 3. Sinh link 1 giờ để React hiển thị
                 string displayUrl = await _minioService.GetUrlImage("avatars", objectName);
 
                 return Ok(new { message = "Upload ảnh thành công!", avatarUrl = displayUrl });
