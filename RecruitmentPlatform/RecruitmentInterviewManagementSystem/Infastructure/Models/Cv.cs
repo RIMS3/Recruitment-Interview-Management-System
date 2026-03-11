@@ -47,6 +47,8 @@ public partial class Cv
 
     public string? TemplateId { get; set; }
 
+    public bool IsDeleted { get; set; } = false;
+
     public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
 
     public virtual CandidateProfile Candidate { get; set; } = null!;

@@ -98,9 +98,23 @@ public class CvsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var isDeleted = await _cvService.DeleteCvAsync(id);
-        if (!isDeleted) return NotFound("Không tìm thấy CV.");
-        return Ok(new { message = "Xóa CV thành công." });
+        try
+        {
+            var isDeleted = await _cvService.DeleteCvAsync(id);
+
+            // Trả về object JSON cho đồng bộ với phía React
+            if (!isDeleted) return NotFound(new { message = "Không tìm thấy CV hoặc CV đã bị xóa." });
+
+            return Ok(new { message = "Xóa CV thành công." });
+        }
+        catch (Exception ex)
+        {
+            // Lấy chi tiết lỗi sâu nhất (nếu có)
+            var errorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+
+            // Trả về lỗi 500 KÈM THEO message chi tiết để biết tại sao lỗi
+            return StatusCode(500, new { message = $"Lỗi server khi xóa CV: {errorMessage}" });
+        }
     }
 
     [HttpGet("{id:guid}/download")]

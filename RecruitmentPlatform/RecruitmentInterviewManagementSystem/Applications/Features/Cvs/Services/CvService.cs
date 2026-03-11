@@ -24,8 +24,12 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
 
         public async Task<IEnumerable<CvSummaryDto>> GetCvsByCandidateAsync(Guid candidateId)
         {
-            var cvs = await _cvRepository.GetCvsByCandidateIdAsync(candidateId);
-            return cvs.Select(cv => new CvSummaryDto
+            var rawCvs = await _cvRepository.GetCvsByCandidateIdAsync(candidateId);
+
+            // 👉 LỌC BỎ CÁC CV ĐÃ XÓA MỀM (IsDeleted == true)
+            var activeCvs = rawCvs.Where(cv => cv.IsDeleted == false);
+
+            return activeCvs.Select(cv => new CvSummaryDto
             {
                 Id = cv.Id,
                 CandidateId = cv.CandidateId,
@@ -34,14 +38,17 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 ExperienceYears = cv.ExperienceYears,
                 IsDefault = cv.IsDefault ?? false,
                 UpdatedAt = cv.UpdatedAt,
-                TemplateId = cv.TemplateId // 👉 1. THÊM DÒNG NÀY: Trả TemplateId về cho trang Manage-CV
+                TemplateId = cv.TemplateId
             });
         }
 
         public async Task<CvDetailDto?> GetCvByIdAsync(Guid id)
         {
             var cv = await _cvRepository.GetCvByIdAsync(id);
-            if (cv == null) return null;
+
+            // 👉 KIỂM TRA: Nếu không có hoặc đã bị xóa mềm thì trả về null
+            if (cv == null || cv.IsDeleted) return null;
+
             return await MapToDetailDto(cv);
         }
 
@@ -71,9 +78,10 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Field = request.Field,
                 CurrentSalary = request.CurrentSalary,
                 IsDefault = request.IsDefault,
-                TemplateId = request.TemplateId ?? "tpl-1", // 👉 2. THÊM DÒNG NÀY: Hứng mã Mẫu khi Tạo mới CV
+                TemplateId = request.TemplateId ?? "tpl-1",
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false // Khởi tạo mặc định là chưa xóa
             };
 
             if (request.File != null && request.File.Length > 0)
@@ -100,7 +108,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 throw new ArgumentException("Họ tên không được để trống.");
 
             var cv = await _cvRepository.GetCvByIdAsync(id);
-            if (cv == null) return null;
+
+            // Không cho phép update nếu CV đã bị xóa mềm
+            if (cv == null || cv.IsDeleted) return null;
 
             cv.FullName = request.FullName;
             cv.Email = request.Email;
@@ -116,7 +126,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             cv.CurrentSalary = request.CurrentSalary;
             cv.IsDefault = request.IsDefault;
 
-            // 👉 3. THÊM ĐOẠN NÀY: Cập nhật TemplateId nếu có thay đổi
             if (!string.IsNullOrWhiteSpace(request.TemplateId))
             {
                 cv.TemplateId = request.TemplateId;
@@ -151,15 +160,17 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
         public async Task<bool> DeleteCvAsync(Guid id)
         {
             var cv = await _cvRepository.GetCvByIdAsync(id);
-            if (cv == null) return false;
 
-            if (!string.IsNullOrWhiteSpace(cv.FileUrl))
-            {
-                var bucketName = _configuration["Minio:CvBucket"] ?? "cvs";
-                await _minioService.DeleteAsync(cv.FileUrl, bucketName);
-            }
+            // 👉 NẾU KHÔNG TÌM THẤY HOẶC ĐÃ XÓA TRƯỚC ĐÓ THÌ BỎ QUA
+            if (cv == null || cv.IsDeleted) return false;
 
-            await _cvRepository.DeleteCvAsync(cv);
+            // 👉 XÓA MỀM: Chuyển trạng thái IsDeleted thành true thay vì xóa vật lý
+            cv.IsDeleted = true;
+            cv.UpdatedAt = DateTime.UtcNow;
+
+            // Giữ nguyên file trên MinIO để các đơn ứng tuyển cũ vẫn truy cập được ảnh/file
+
+            await _cvRepository.UpdateCvAsync(cv);
             return true;
         }
 
@@ -183,7 +194,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
         public async Task<CvEditorDataDto?> GetEditorDataAsync(Guid cvId)
         {
             var cv = await _cvRepository.GetCvByIdAsync(cvId);
-            if (cv == null) return null;
+
+            // 👉 CHẶN TRUY CẬP EDITOR NẾU CV ĐÃ BỊ XÓA
+            if (cv == null || cv.IsDeleted) return null;
 
             return await BuildEditorData(cv);
         }
@@ -194,7 +207,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 throw new ArgumentException("Họ tên không được để trống.");
 
             var cv = await _cvRepository.GetCvByIdAsync(cvId);
-            if (cv == null) return null;
+
+            // Không cho phép update editor nếu CV đã bị xóa mềm
+            if (cv == null || cv.IsDeleted) return null;
 
             // 1. MAPPING ĐẦY ĐỦ CÁC TRƯỜNG THÔNG TIN CÁ NHÂN VÀO ENTITY
             cv.FullName = request.FullName;
@@ -210,7 +225,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             cv.CurrentSalary = request.CurrentSalary;
             cv.ExperienceYears = request.ExperienceYears;
 
-            // 👉 4. THÊM ĐOẠN NÀY: Hứng TemplateId khi nhấn nút "Lưu CV"
             if (!string.IsNullOrWhiteSpace(request.TemplateId))
             {
                 cv.TemplateId = request.TemplateId;
@@ -218,7 +232,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
 
             cv.UpdatedAt = DateTime.UtcNow;
 
-            // 2. MAPPING MẢNG (GIỮ NGUYÊN)
+            // 2. MAPPING MẢNG
             var educations = request.Educations.Select(x => new CvEducation
             {
                 Id = x.Id ?? Guid.NewGuid(),
@@ -307,7 +321,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 IsDefault = cv.IsDefault ?? false,
                 CreatedAt = cv.CreatedAt,
                 UpdatedAt = cv.UpdatedAt,
-                TemplateId = cv.TemplateId // 👉 5. THÊM DÒNG NÀY
+                TemplateId = cv.TemplateId
             };
         }
 
@@ -319,7 +333,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             var rawCertificates = await _cvRepository.GetCertificatesAsync(cv.Id);
             var rawSkills = await _cvRepository.GetSkillsAsync(cv.Id);
 
-            // 👉 1. BỔ SUNG XỬ LÝ LẤY LINK ẢNH TỪ MINIO
             var fileBucket = _configuration["Minio:CvBucket"] ?? "cvs";
             var displayFileUrl = string.IsNullOrWhiteSpace(cv.FileUrl)
                 ? null
@@ -332,8 +345,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 FullName = cv.FullName,
                 Position = cv.Position,
                 Summary = cv.EducationSummary,
-
-                // BỔ SUNG TRẢ VỀ CHO FRONTEND ĐỂ F5 KHÔNG BỊ MẤT DỮ LIỆU
                 Email = cv.Email,
                 PhoneNumber = cv.PhoneNumber,
                 Address = cv.Address,
@@ -343,10 +354,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 Field = cv.Field,
                 CurrentSalary = cv.CurrentSalary,
                 ExperienceYears = cv.ExperienceYears,
-
                 TemplateId = cv.TemplateId,
-
-                // 👉 2. THÊM 2 DÒNG NÀY ĐỂ TRẢ VỀ CHO REACT TẠO ẢNH PREVIEW
                 FileName = cv.FileName,
                 FileUrl = displayFileUrl,
 
@@ -392,40 +400,37 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
                 }).ToList()
             };
         }
+
         public async Task<CvAvatarResponseDto> UpdateAvatarAsync(Guid cvId, IFormFile file)
         {
             if (file == null || file.Length == 0)
                 throw new ArgumentException("Vui lòng chọn một file ảnh hợp lệ.");
 
-            // 1. Tìm CV (Đổi .Cvs thành DbSet tương ứng trong context của bạn nếu khác)
             var cv = await _context.Cvs.FindAsync(cvId);
-            if (cv == null)
+
+            // 👉 KIỂM TRA ĐẢM BẢO CV CHƯA BỊ XÓA
+            if (cv == null || cv.IsDeleted)
                 throw new KeyNotFoundException("Không tìm thấy CV.");
 
-            string bucketName = "cvs"; // Có thể đổi thành "avatars" nếu muốn
+            string bucketName = "cvs";
 
-            // 2. Xóa ảnh cũ trên MinIO (nếu có)
             if (!string.IsNullOrWhiteSpace(cv.FileName))
             {
                 await _minioService.DeleteAsync(cv.FileName, bucketName);
             }
 
-            // 3. Upload ảnh mới
             string newObjectName = await _minioService.UploadAsync(file, bucketName);
 
-            // 4. Cập nhật Database
-            cv.FileName = file.FileName; // Lưu tên gốc (VD: anh-the.jpg)
-            cv.FileUrl = newObjectName;  // Lưu mã GUID của MinIO vào cột FileUrl
+            cv.FileName = file.FileName;
+            cv.FileUrl = newObjectName;
             cv.MimeType = file.ContentType;
             cv.UpdatedAt = DateTime.UtcNow;
 
             _context.Cvs.Update(cv);
             await _context.SaveChangesAsync();
 
-            // 5. Lấy URL Presigned từ MinIO
             string fileUrl = await _minioService.GetUrlImage(bucketName, newObjectName);
 
-            // 6. Trả về DTO
             return new CvAvatarResponseDto
             {
                 Id = cv.Id,
