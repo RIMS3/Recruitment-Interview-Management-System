@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Applications.Features.Application.DTO;
+using RecruitmentInterviewManagementSystem.Applications.Features.Interface;
 using RecruitmentInterviewManagementSystem.Domain.Enums;
 using RecruitmentInterviewManagementSystem.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
 {
@@ -11,10 +16,12 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
     public class EmployerApplicationsController : ControllerBase
     {
         private readonly FakeTopcvContext _context;
+        private readonly IMinIOCV _minioService;
 
-        public EmployerApplicationsController(FakeTopcvContext context)
+        public EmployerApplicationsController(FakeTopcvContext context, IMinIOCV minioService)
         {
             _context = context;
+            _minioService = minioService;
         }
 
         // =====================================================
@@ -22,22 +29,25 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         // =====================================================
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ApplicationDTO>>> GetApplications(
-    [FromQuery] Guid? companyId,
-    [FromQuery] int? status,
-    [FromQuery] string? searchTitle) // searchTitle bây giờ đóng vai trò là từ khóa chung
+            [FromQuery] Guid? companyId,
+            [FromQuery] int? status,
+            [FromQuery] string? searchTitle)
         {
             var query = _context.Applications
                 .AsNoTracking()
-                .Include(a => a.Candidate).ThenInclude(c => c.User)
+                .Include(a => a.Candidate)
+                    .ThenInclude(c => c.User)
                 .Include(a => a.Job)
                 .Include(a => a.Cv)
                 .AsQueryable();
 
-            if (companyId.HasValue) query = query.Where(a => a.Job.CompanyId == companyId.Value);
+            if (companyId.HasValue)
+                query = query.Where(a => a.Job.CompanyId == companyId.Value);
 
-            if (status.HasValue) query = query.Where(a => a.Status == status.Value);
+            if (status.HasValue)
+                query = query.Where(a => a.Status == status.Value);
 
-            // CẬP NHẬT Ở ĐÂY: Tìm theo cả Job Title HOẶC FullName của ứng viên
+            // Tìm theo cả Job Title HOẶC FullName của ứng viên
             if (!string.IsNullOrWhiteSpace(searchTitle))
             {
                 var keyword = searchTitle.Trim().ToLower();
@@ -47,6 +57,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 );
             }
 
+            // 1. Truy vấn dữ liệu cơ bản từ Database
             var applications = await query
                 .OrderByDescending(a => a.AppliedAt)
                 .Select(a => new ApplicationDTO
@@ -54,7 +65,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                     ApplicationId = a.Id,
                     CandidateName = a.Candidate.User.FullName,
                     CandidateEmail = a.Candidate.User.Email,
-                    CandidateAvatar = a.Candidate.AvatarUrl,
+                    CandidateAvatar = a.Candidate.AvatarUrl, // Tạm thời lấy tên file ảnh
                     JobTitle = a.Job.Title,
                     AppliedAt = a.AppliedAt ?? default,
                     Status = a.Status ?? 0,
@@ -62,6 +73,25 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 })
                 .ToListAsync();
 
+            // 2. Sinh link MinIO hàng loạt cho những ứng viên có ảnh
+            foreach (var app in applications)
+            {
+                if (!string.IsNullOrEmpty(app.CandidateAvatar))
+                {
+                    try
+                    {
+                        // Đổi tên file thành link có thể truy cập được
+                        app.CandidateAvatar = await _minioService.GetUrlImage("avatars", app.CandidateAvatar);
+                    }
+                    catch
+                    {
+                        // Bỏ qua lỗi (set null) nếu MinIO gặp sự cố với file này để không sập toàn bộ API
+                        app.CandidateAvatar = null;
+                    }
+                }
+            }
+
+            // 3. Trả về danh sách đã hoàn thiện
             return Ok(applications);
         }
 
@@ -94,6 +124,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
 
             return NoContent();
         }
+
         // =====================================================
         // GET CV BY APPLICATION
         // =====================================================
@@ -114,6 +145,44 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             {
                 cvId = application.Cvid
             });
+        }
+
+        // =====================================================
+        // GET AVATAR BY CANDIDATE ID (Lấy lẻ 1 người nếu cần)
+        // =====================================================
+        [HttpGet("{id}/avatar")]
+        public async Task<IActionResult> GetAvatarUrl(Guid id)
+        {
+            var profile = await _context.CandidateProfiles.FindAsync(id);
+            if (profile == null)
+            {
+                return NotFound(new { message = "Không tìm thấy hồ sơ." });
+            }
+
+            if (string.IsNullOrEmpty(profile.AvatarUrl))
+            {
+                return Ok(new
+                {
+                    candidateId = id,
+                    avatarUrl = (string)null,
+                    message = "Ứng viên chưa có ảnh đại diện."
+                });
+            }
+
+            try
+            {
+                string displayUrl = await _minioService.GetUrlImage("avatars", profile.AvatarUrl);
+
+                return Ok(new
+                {
+                    candidateId = id,
+                    avatarUrl = displayUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+            }
         }
     }
 }
