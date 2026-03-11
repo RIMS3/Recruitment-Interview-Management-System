@@ -7,6 +7,7 @@ using RecruitmentInterviewManagementSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
@@ -25,14 +26,25 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         }
 
         // =====================================================
-        // GET: Applications (All + Filter Backend)
+        // GET: Applications (Lọc theo Jobs của chính Employer)
         // =====================================================
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ApplicationDTO>>> GetApplications(
-            [FromQuery] Guid? companyId,
             [FromQuery] int? status,
             [FromQuery] string? searchTitle)
         {
+            // 1. Lấy UserId từ Token người dùng đang đăng nhập
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst("id")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính người dùng." });
+            }
+
+            Guid currentUserId = Guid.Parse(userIdClaim);
+
+            // 2. Xây dựng truy vấn lọc hồ sơ
             var query = _context.Applications
                 .AsNoTracking()
                 .Include(a => a.Candidate)
@@ -41,13 +53,15 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 .Include(a => a.Cv)
                 .AsQueryable();
 
-            if (companyId.HasValue)
-                query = query.Where(a => a.Job.CompanyId == companyId.Value);
+            // LOGIC QUAN TRỌNG: Chỉ lấy hồ sơ của các Job thuộc về CompanyId của Employer này
+            query = query.Where(a => _context.EmployerProfiles
+                .Any(ep => ep.UserId == currentUserId && ep.CompanyId == a.Job.CompanyId));
 
+            // Lọc theo trạng thái nếu có
             if (status.HasValue)
                 query = query.Where(a => a.Status == status.Value);
 
-            // Tìm theo cả Job Title HOẶC FullName của ứng viên
+            // Tìm kiếm theo tiêu đề Job hoặc tên ứng viên
             if (!string.IsNullOrWhiteSpace(searchTitle))
             {
                 var keyword = searchTitle.Trim().ToLower();
@@ -57,7 +71,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 );
             }
 
-            // 1. Truy vấn dữ liệu cơ bản từ Database
+            // 3. Thực thi truy vấn và Map sang DTO
             var applications = await query
                 .OrderByDescending(a => a.AppliedAt)
                 .Select(a => new ApplicationDTO
@@ -65,33 +79,30 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                     ApplicationId = a.Id,
                     CandidateName = a.Candidate.User.FullName,
                     CandidateEmail = a.Candidate.User.Email,
-                    CandidateAvatar = a.Candidate.AvatarUrl, // Tạm thời lấy tên file ảnh
+                    CandidateAvatar = a.Candidate.AvatarUrl,
                     JobTitle = a.Job.Title,
-                    AppliedAt = a.AppliedAt ?? default,
+                    AppliedAt = a.AppliedAt ?? DateTime.Now,
                     Status = a.Status ?? 0,
                     CvUrl = a.Cv != null ? a.Cv.FileUrl : string.Empty
                 })
                 .ToListAsync();
 
-            // 2. Sinh link MinIO hàng loạt cho những ứng viên có ảnh
+            // 4. Xử lý URL ảnh từ MinIO
             foreach (var app in applications)
             {
                 if (!string.IsNullOrEmpty(app.CandidateAvatar))
                 {
                     try
                     {
-                        // Đổi tên file thành link có thể truy cập được
                         app.CandidateAvatar = await _minioService.GetUrlImage("avatars", app.CandidateAvatar);
                     }
                     catch
                     {
-                        // Bỏ qua lỗi (set null) nếu MinIO gặp sự cố với file này để không sập toàn bộ API
                         app.CandidateAvatar = null;
                     }
                 }
             }
 
-            // 3. Trả về danh sách đã hoàn thiện
             return Ok(applications);
         }
 
@@ -148,7 +159,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         }
 
         // =====================================================
-        // GET AVATAR BY CANDIDATE ID (Lấy lẻ 1 người nếu cần)
+        // GET AVATAR BY CANDIDATE ID
         // =====================================================
         [HttpGet("{id}/avatar")]
         public async Task<IActionResult> GetAvatarUrl(Guid id)
