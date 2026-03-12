@@ -251,6 +251,9 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                     b.Property<int?>("Gender")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsCvPro")
+                        .HasColumnType("bit");
+
                     b.Property<string>("JobLevel")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");

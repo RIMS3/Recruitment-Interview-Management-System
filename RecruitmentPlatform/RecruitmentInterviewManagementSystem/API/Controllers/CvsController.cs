@@ -57,10 +57,25 @@ public class CvsController : ControllerBase
     // =======================================================
 
     [HttpGet("candidate/{candidateId:guid}")]
-    public async Task<ActionResult<IEnumerable<CvSummaryDto>>> GetByCandidate(Guid candidateId)
+    public async Task<ActionResult<CandidateCvOverviewDto>> GetByCandidate(Guid candidateId)
     {
+        var candidateProfile = await _context.CandidateProfiles.FirstOrDefaultAsync(c => c.Id == candidateId);
+        if (candidateProfile == null)
+        {
+            return NotFound("Không tìm thấy hồ sơ ứng viên.");
+        }
         var cvs = await _cvService.GetCvsByCandidateAsync(candidateId);
-        return Ok(cvs);
+        var currentCvCount = cvs.Count();
+        bool canCreateNew = candidateProfile.IsCvPro || currentCvCount < 2;
+        var overview = new CandidateCvOverviewDto
+        {
+            IsCvPro = candidateProfile.IsCvPro,
+            CurrentCvCount = currentCvCount,
+            CanCreateNew = canCreateNew,
+            Cvs = cvs
+        };
+
+        return Ok(overview);
     }
 
     [HttpGet("{id:guid}")]

@@ -29,6 +29,7 @@ public partial class CandidateProfile
 
     public string? Summary { get; set; }
 
+    public bool IsCvPro { get; set; } = false;
     public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
 
     public virtual ICollection<CandidateSkill> CandidateSkills { get; set; } = new List<CandidateSkill>();

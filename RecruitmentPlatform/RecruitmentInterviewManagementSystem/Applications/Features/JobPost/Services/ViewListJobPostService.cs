@@ -41,6 +41,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.JobPost.Ser
                 Experience = j.Experience,
                 JobType = (JobType?)j.JobType
 
+
             }).ToList();
         }
 
