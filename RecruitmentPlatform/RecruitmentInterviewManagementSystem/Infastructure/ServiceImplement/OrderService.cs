@@ -2,9 +2,6 @@
 using RecruitmentInterviewManagementSystem.Applications.Features.Order.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.Order.Interface;
 using RecruitmentInterviewManagementSystem.Applications.Features.PagedResult;
-
-
-// THÊM DÒNG NÀY ĐỂ GỌI DTO CŨ VÀO SERVICE:
 using RecruitmentInterviewManagementSystem.Applications.Features.ServicePackage.DTO;
 using RecruitmentInterviewManagementSystem.Domain.InterfacesRepository;
 using RecruitmentInterviewManagementSystem.Models;
@@ -20,12 +17,10 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             _orderRepository = orderRepository;
         }
 
-        public async Task<PagedResult<OrderDto>> GetOrdersByEmployeeIdAsync(Guid employerId, int pageNumber, int pageSize)
+        public async Task<PagedResult<OrderDto>> GetMyOrdersAsync(Guid userId, int pageNumber, int pageSize)
         {
-            // Nhận dữ liệu từ Repository
-            var (orders, totalCount) = await _orderRepository.GetOrdersWithDetailsByEmployerIdAsync(employerId, pageNumber, pageSize);
+            var (orders, totalCount) = await _orderRepository.GetOrdersByUserIdAsync(userId, pageNumber, pageSize);
 
-            // Map Entity sang DTO (Đoạn này giữ nguyên y hệt như code cũ của bạn)
             var orderDtos = orders.Select(o => new OrderDto
             {
                 Id = o.Id,
@@ -51,7 +46,6 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 }).ToList()
             }).ToList();
 
-            // Gói vào PagedResult
             return new PagedResult<OrderDto>
             {
                 Items = orderDtos,
@@ -61,13 +55,11 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             };
         }
 
-        public async Task<OrderDto?> GetOrderDetailsByIdAsync(Guid orderId)
+        public async Task<OrderDto?> GetOrderDetailsByIdAsync(Guid orderId, Guid userId)
         {
-            var order = await _orderRepository.GetOrderDetailsByIdAsync(orderId);
-
+            var order = await _orderRepository.GetOrderDetailsByIdAndUserIdAsync(orderId, userId);
             if (order == null) return null;
 
-            // Tái sử dụng logic Map sang DTO
             return new OrderDto
             {
                 Id = order.Id,

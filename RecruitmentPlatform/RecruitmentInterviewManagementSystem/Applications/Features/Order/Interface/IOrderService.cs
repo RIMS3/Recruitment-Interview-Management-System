@@ -5,7 +5,7 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Order.Inter
 {
     public interface IOrderService
     {
-        Task<PagedResult<OrderDto>> GetOrdersByEmployeeIdAsync(Guid employerId, int pageNumber, int pageSize);
-        Task<OrderDto?> GetOrderDetailsByIdAsync(Guid orderId);
+        Task<PagedResult<OrderDto>> GetMyOrdersAsync(Guid userId, int pageNumber, int pageSize);
+        Task<OrderDto?> GetOrderDetailsByIdAsync(Guid orderId, Guid userId);
     }
 }
