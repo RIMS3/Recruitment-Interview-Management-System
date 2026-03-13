@@ -97,8 +97,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SelectRole([FromBody] SelectRoleRequest request)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                 ?? User.FindFirst("id")
-                 ?? User.FindFirst("sub");
+                     ?? User.FindFirst("id")
+                     ?? User.FindFirst("sub");
 
         if (userIdClaim == null)
             return Unauthorized("Token không chứa userId");
@@ -117,32 +117,31 @@ public class AuthController : ControllerBase
         if (request.Role != 2 && request.Role != 3)
             return BadRequest("Role không hợp lệ");
 
-        // SET ROLE
+        // Cập nhật Role cho User
         user.Role = request.Role;
 
         Guid? candidateId = null;
 
-        // ===== CREATE CANDIDATE PROFILE =====
+        // ===== CHỈ TẠO PROFILE CHO ỨNG VIÊN (VÌ KHÔNG VƯỚNG KHÓA NGOẠI) =====
         if (request.Role == 2)
         {
-            var candidate = _context.CandidateProfiles
-                .FirstOrDefault(c => c.UserId == user.Id);
+            var candidate = await _context.CandidateProfiles
+                .FirstOrDefaultAsync(c => c.UserId == user.Id);
 
             if (candidate == null)
             {
-                candidate = new CandidateProfile
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id
-                };
-
+                candidate = new CandidateProfile { Id = Guid.NewGuid(), UserId = user.Id };
                 _context.CandidateProfiles.Add(candidate);
             }
-
             candidateId = candidate.Id;
         }
+        // Đối với Role 3 (Nhà tuyển dụng): 
+        // Chúng ta KHÔNG tạo EmployerProfile ở đây vì cột CompanyId là NOT NULL.
+        // Việc tạo EmployerProfile sẽ được thực hiện ở trang CreateCompany.
+
         await _context.SaveChangesAsync();
 
+        // Tạo lại token mới chứa Role mới để Frontend cập nhật quyền truy cập
         var userEntity = new UserEntity(
             user.Id,
             user.Email,
@@ -157,7 +156,8 @@ public class AuthController : ControllerBase
         {
             accessToken = newAccessToken,
             role = user.Role,
-            candidateId = candidateId
+            candidateId = candidateId,
+            userId = user.Id // Trả về userId để frontend biết ai đang tạo công ty
         });
     }
 
