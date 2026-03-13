@@ -8,17 +8,15 @@ using System.Security.Claims;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
 {
-    [Route("api/[controller]")]
+  [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly FakeTopcvContext _context;
 
-        public OrdersController(IOrderService orderService, FakeTopcvContext context)
+        public OrdersController(IOrderService orderService)
         {
             _orderService = orderService;
-            _context = context;
         }
 
         [HttpGet]
@@ -34,20 +32,14 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 return Unauthorized(new { message = "Không tìm thấy thông tin xác thực UserId hợp lệ trong Token." });
             }
 
-            var employer = await _context.EmployerProfiles.FirstOrDefaultAsync(e => e.UserId == userId);
-
-            if (employer == null)
-            {
-                return NotFound(new { message = "Không tìm thấy hồ sơ Employer cho tài khoản này." });
-            }
-
-            var pagedOrders = await _orderService.GetOrdersByEmployeeIdAsync(employer.Id, pageNumber, pageSize);
+            // Gọi thẳng Service, Service sẽ tự biết tìm Candidate hay Employer
+            var pagedOrders = await _orderService.GetMyOrdersAsync(userId, pageNumber, pageSize);
 
             return Ok(pagedOrders);
         }
 
-        [HttpGet("{id}")] 
-        [Authorize] 
+        [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetOrderById(Guid id)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -59,23 +51,12 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 return Unauthorized(new { message = "Không tìm thấy thông tin xác thực." });
             }
 
-            var employer = await _context.EmployerProfiles.FirstOrDefaultAsync(e => e.UserId == userId);
-            if (employer == null)
-            {
-                return NotFound(new { message = "Không tìm thấy hồ sơ Employer." });
-            }
-
-            var order = await _orderService.GetOrderDetailsByIdAsync(id);
+            var order = await _orderService.GetOrderDetailsByIdAsync(id, userId);
 
             if (order == null)
             {
-                return NotFound(new { message = "Không tìm thấy đơn hàng này." });
-            }
-
-            var dbOrderCheck = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
-            if (dbOrderCheck != null && dbOrderCheck.EmployerId != employer.Id)
-            {
-                return Forbid(); 
+                // Thông báo chung chung để bảo mật, không cho User biết là đơn hàng không tồn tại hay họ không có quyền xem
+                return NotFound(new { message = "Không tìm thấy đơn hàng này hoặc bạn không có quyền truy cập." });
             }
 
             return Ok(order);
