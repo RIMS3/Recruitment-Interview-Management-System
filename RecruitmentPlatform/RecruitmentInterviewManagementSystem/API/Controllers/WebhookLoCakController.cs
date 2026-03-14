@@ -56,9 +56,23 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                     }
 
                 }
-                else if (webhookData.Code == "00" && webhookData.Description == "CVPRO_RENEW")
+                else if (webhookData.Code == "00" && webhookData.Description == "NapTienITLOCAK")
                 {
 
+                    var order = await _db.Orders.FirstOrDefaultAsync(o => o.OrderCode == webhookData.OrderCode.ToString());
+                    if (order != null)
+                    {
+                        var user = _db.Users.FirstOrDefault(u => u.Id == order.UserId);
+                        if (user != null)
+                        {
+                            user.Coin += webhookData.Amount;
+
+                            order.Status = (int)PaymentStatus.Success;
+                            await _db.SaveChangesAsync();
+                            await _paymentHub.Clients.All.SendAsync("PaidOrder", $"Bạn đã nạp thành công {webhookData.Amount} coin");
+                            await transaction.CommitAsync();
+                        }
+                    }
                 }
             }
             catch (Exception ex)

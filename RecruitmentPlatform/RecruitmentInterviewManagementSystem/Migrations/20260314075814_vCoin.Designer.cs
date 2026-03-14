@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecruitmentInterviewManagementSystem.Models;
 
@@ -11,9 +12,11 @@ using RecruitmentInterviewManagementSystem.Models;
 namespace RecruitmentInterviewManagementSystem.Migrations
 {
     [DbContext(typeof(FakeTopcvContext))]
-    partial class FakeTopcvContextModelSnapshot : ModelSnapshot
+    [Migration("20260314075814_vCoin")]
+    partial class vCoin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -973,9 +976,6 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("(newid())");
-
-                    b.Property<decimal>("Coin")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()

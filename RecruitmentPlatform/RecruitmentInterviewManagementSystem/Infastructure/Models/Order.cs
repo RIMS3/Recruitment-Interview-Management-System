@@ -19,6 +19,8 @@ public partial class Order
 
     public Guid UserId { get; set; }
 
+    public decimal Coin { get; set; }
+
     public virtual User User { get; set; } = null!;
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

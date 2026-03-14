@@ -23,6 +23,8 @@ public partial class User
 
     public string Salt { get; set; } = null!;
 
+    public decimal Coin { get; set; } = 0;
+
     public ICollection<Order> orders { get; set; } = new List<Order>();
 
     public virtual CandidateProfile? CandidateProfile { get; set; }
