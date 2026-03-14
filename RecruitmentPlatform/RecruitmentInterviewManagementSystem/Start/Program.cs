@@ -22,6 +22,8 @@ using RecruitmentInterviewManagementSystem.Infastructure.Workers;
 using Minio;
 using PayOS;
 using RecruitmentInterviewManagementSystem.Infastructure.HubPayment;
+using RecruitmentInterviewManagementSystem.Applications.TaiOrXiuFeature.Workers;
+using RecruitmentInterviewManagementSystem.Applications.TaiOrXiuFeature.HubResult;
 namespace RecruitmentInterviewManagementSystem.Start
 {
     public class Program
@@ -67,7 +69,7 @@ namespace RecruitmentInterviewManagementSystem.Start
                  .WithSSL(false)
                  .Build());
             builder.Services.AddScoped<IMinIOCV, MinIOfaketopcv>();
-
+            builder.Services.AddHostedService<TakePlaceGame>();
             var jwtSecret = builder.Configuration["Authentication:Jwt:Secret"]
                             ?? throw new Exception("JWT Secret not configured");
             var jwtIssuer = builder.Configuration["Authentication:Jwt:Issuer"];
@@ -102,7 +104,8 @@ namespace RecruitmentInterviewManagementSystem.Start
                             var path = context.HttpContext.Request.Path;
 
                             if (!string.IsNullOrEmpty(accessToken) &&
-                                path.StartsWithSegments("/paymentHub"))
+                               (path.StartsWithSegments("/paymentHub") ||
+                                path.StartsWithSegments("/taixiu-hub")))
                             {
                                 context.Token = accessToken;
                             }
@@ -145,7 +148,7 @@ namespace RecruitmentInterviewManagementSystem.Start
 
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.MapHub<TaiXiuHub>("/taixiu-hub");
             app.MapHub<PaymentHub>("/paymentHub");
             app.MapControllers();
 

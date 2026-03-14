@@ -67,6 +67,10 @@ public partial class FakeTopcvContext : DbContext
     public DbSet<Advertisement> Advertisements { get; set; }
 
 
+    public virtual DbSet<GameRounds> GameRounds { get; set; }
+
+    public virtual DbSet<Bets> Bets { get; set; }   
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 

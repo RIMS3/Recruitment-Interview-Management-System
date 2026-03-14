@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RecruitmentInterviewManagementSystem.Infastructure.Models;
+using System;
 using System.Collections.Generic;
 
 namespace RecruitmentInterviewManagementSystem.Models;
@@ -34,6 +35,10 @@ public partial class User
     public virtual CandidateProfile? CandidateProfile { get; set; }
 
     public virtual EmployerProfile? EmployerProfile { get; set; }
+
+
+    public virtual ICollection<Bets> Bets { get; set; } = new List<Bets>();
+
 
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
