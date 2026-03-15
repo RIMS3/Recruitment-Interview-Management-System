@@ -45,7 +45,7 @@ namespace RecruitmentInterviewManagementSystem.API.RefillVIP
             var result = await _refill.GiftCodeBeginer(code);
             if (result)
             {
-                return Ok(new { Message = "Chúc người AE may mắn" });
+                return Ok(new { Message = "+ 500k Chúc người AE may mắn" });
             }
             else
             {

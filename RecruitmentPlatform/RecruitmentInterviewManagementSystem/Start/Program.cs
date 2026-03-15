@@ -43,10 +43,12 @@ namespace RecruitmentInterviewManagementSystem.Start
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.WithOrigins("http://localhost:5173",
+                    "https://itlocak.xyz",  // Bắt buộc https và không có / ở cuối
+                    "https://103.161.119.162") // Nếu IP cũng có SSL, nếu không thì bỏ dòng này
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
                 });
             });
             builder.Services.AddSignalR();
@@ -150,8 +152,10 @@ namespace RecruitmentInterviewManagementSystem.Start
             app.UseAuthorization();
             app.MapHub<TaiXiuHub>("/taixiu-hub");
             app.MapHub<PaymentHub>("/paymentHub");
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
             app.MapControllers();
-
+            app.MapFallbackToFile("index.html");
             app.Run();
         }
     }
