@@ -66,7 +66,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.TaiOrXiuImplement
 
         public async Task<List<BridgeDTO>> GetHistory()
         {
-            return await _db.GameRounds.OrderByDescending(x => x.StartTime).Take(10)
+            return await _db.GameRounds.OrderByDescending(x => x.StartTime).Take(20)
                  .Select(s => new BridgeDTO
                  {
                      Result = s.Result,
