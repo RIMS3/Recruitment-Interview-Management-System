@@ -54,7 +54,8 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                 DesiredSalary = profile.DesiredSalary,
                 JobLevel = profile.JobLevel,
                 Summary = profile.Summary,
-                AvatarUrl = avatarUrl
+                AvatarUrl = avatarUrl,
+                IsCvPro = profile.IsCvPro
             });
         }
 

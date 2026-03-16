@@ -13,5 +13,6 @@
         public decimal? DesiredSalary { get; set; }
         public string? JobLevel { get; set; }
         public string? Summary { get; set; }
+        public bool IsCvPro { get; set; }
     }
 }
