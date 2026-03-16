@@ -45,7 +45,6 @@ namespace RecruitmentInterviewManagementSystem.API.TaiOrXiuControllers
             return Ok(history);
         }
 
-   
-
+  
     }
 }

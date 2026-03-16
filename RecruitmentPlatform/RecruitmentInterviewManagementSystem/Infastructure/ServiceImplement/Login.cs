@@ -26,9 +26,13 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 
             var idUser = Guid.Empty;
 
+            var idCompany = Guid.Empty; 
+
             if (user.Role == (int)Role.EMPLOYERER)
             {
                 idUser = await _context.EmployerProfiles.Where(s => s.UserId == user.Id).Select(s => s.Id).FirstOrDefaultAsync();
+
+                 idCompany = await _context.EmployerProfiles.Where(s => s.UserId == user.Id).Select(s => s.CompanyId).FirstOrDefaultAsync();
 
             }
             else if (user.Role == (int)Role.CANDIDATE)
@@ -90,7 +94,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 RefreshToken = refreshToken,
                 Email = user.Email,
                 FullName = user.FullName!,
-                Role = user.Role ?? 0
+                Role = user.Role ?? 0,
+                IdCompany = idCompany
             };
         }
     }
