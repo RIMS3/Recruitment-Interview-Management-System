@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Applications.Features.Order.Interface;
-using System.Security.Claims;
+using RecruitmentInterviewManagementSystem.Models;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
 {
@@ -12,28 +15,45 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly FakeTopcvContext _context;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(IOrderService orderService, FakeTopcvContext context)
         {
             _orderService = orderService;
+            _context = context;
         }
+
+        // ==========================================
+        // HÀM HELPER: Lấy UserId thật từ ProfileId trong Token
+        // ==========================================
+        private async Task<Guid> GetActualUserIdFromTokenAsync()
+        {
+            var tokenClaimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(tokenClaimId) || !Guid.TryParse(tokenClaimId, out Guid profileId))
+                return Guid.Empty;
+
+            var isCandidate = await _context.CandidateProfiles.AnyAsync(c => c.Id == profileId);
+            if (isCandidate)
+            {
+                return await _context.CandidateProfiles
+                    .Where(c => c.Id == profileId).Select(c => c.UserId).FirstOrDefaultAsync();
+            }
+
+            return await _context.EmployerProfiles
+                .Where(e => e.Id == profileId).Select(e => e.UserId).FirstOrDefaultAsync();
+        }
+        // ==========================================
 
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetMyOrders([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            // 1. Lấy UserId từ Token theo đúng mẫu bạn muốn
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid actualUserId = await GetActualUserIdFromTokenAsync();
 
-            // 2. Ép kiểu sang Guid để truyền xuống Service
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
-            {
-                return Unauthorized(new { message = "Không tìm thấy thông tin xác thực UserId hợp lệ trong Token." });
-            }
+            if (actualUserId == Guid.Empty)
+                return Unauthorized(new { message = "Không tìm thấy thông tin xác thực." });
 
-            // 3. Gọi thẳng Service
-            var pagedOrders = await _orderService.GetMyOrdersAsync(userId, pageNumber, pageSize);
-
+            var pagedOrders = await _orderService.GetMyOrdersAsync(actualUserId, pageNumber, pageSize);
             return Ok(pagedOrders);
         }
 
@@ -41,18 +61,29 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetOrderById(Guid id)
         {
-            // 1. Lấy UserId từ Token theo đúng mẫu bạn muốn
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // 1. Lấy ID trực tiếp từ Token (ID này đang bị lưu nhầm vào bảng Orders lúc tạo đơn)
+            var tokenClaimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            // 2. Ép kiểu sang Guid
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (string.IsNullOrEmpty(tokenClaimId) || !Guid.TryParse(tokenClaimId, out Guid rawTokenId))
             {
                 return Unauthorized(new { message = "Không tìm thấy thông tin xác thực." });
             }
 
-            // 3. Lấy chi tiết đơn hàng
-            var order = await _orderService.GetOrderDetailsByIdAsync(id, userId);
+            // 2. Thử tìm đơn hàng bằng cái ID từ Token trước (Chữa cháy cho các đơn cũ bị lưu nhầm ProfileId)
+            var order = await _orderService.GetOrderDetailsByIdAsync(id, rawTokenId);
 
+            // 3. Nếu không thấy, lúc này mới thử tìm bằng UserId thật (Cho các đơn lưu chuẩn)
+            if (order == null)
+            {
+                Guid actualUserId = await GetActualUserIdFromTokenAsync();
+
+                if (actualUserId != Guid.Empty && actualUserId != rawTokenId)
+                {
+                    order = await _orderService.GetOrderDetailsByIdAsync(id, actualUserId);
+                }
+            }
+
+            // 4. Trả kết quả
             if (order == null)
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng này hoặc bạn không có quyền truy cập." });
