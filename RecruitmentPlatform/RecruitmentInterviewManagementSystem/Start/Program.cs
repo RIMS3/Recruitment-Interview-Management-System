@@ -28,6 +28,7 @@ using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Validators;
+using StackExchange.Redis;
 namespace RecruitmentInterviewManagementSystem.Start
 {
     public class Program
@@ -172,6 +173,11 @@ namespace RecruitmentInterviewManagementSystem.Start
                 options.Configuration = builder.Configuration["Redis"];
                 options.InstanceName = "ITLOCAK";
             });
+
+
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+                 ConnectionMultiplexer.Connect(builder.Configuration["Redis"]!));
+
 
             var app = builder.Build();
 

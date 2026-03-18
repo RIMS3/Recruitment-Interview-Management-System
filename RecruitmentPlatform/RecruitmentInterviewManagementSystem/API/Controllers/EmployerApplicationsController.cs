@@ -168,6 +168,7 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+       
 
         [HttpGet("{applicationId:guid}/cv")]
         public async Task<IActionResult> GetCvByApplication(Guid applicationId)
