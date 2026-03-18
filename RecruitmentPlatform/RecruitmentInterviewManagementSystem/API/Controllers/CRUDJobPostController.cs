@@ -32,7 +32,7 @@ public class CRUDJobPostController : ControllerBase
 
         var userId = Guid.Parse(userIdClaim.Value);
         var employer = await _context.EmployerProfiles
-            .FirstOrDefaultAsync(e => e.UserId == userId);
+            .FirstOrDefaultAsync(e => e.Id == userId);
 
         if (employer == null)
             return BadRequest("Employer profile not found");
@@ -76,7 +76,7 @@ public class CRUDJobPostController : ControllerBase
         var userId = Guid.Parse(userIdClaim.Value);
 
         var employer = await _context.EmployerProfiles
-            .FirstOrDefaultAsync(e => e.UserId == userId);
+            .FirstOrDefaultAsync(e => e.Id == userId);
 
         var jobs = await _context.JobPosts
             .Where(j => j.CompanyId == employer.CompanyId)
