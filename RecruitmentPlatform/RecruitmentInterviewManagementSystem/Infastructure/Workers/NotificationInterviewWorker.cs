@@ -50,7 +50,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
                     return;
                 }
 
-                var queueName = _iConfig["RabbitMQ:Queuen:NotificationInterview"]!;
+                var queueName = _iConfig["RabbitMQQUEUE"]!;
 
                 await _channel.QueueDeclareAsync(
                     queue: queueName,
@@ -125,7 +125,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
                 await _channel.BasicConsumeAsync(
                     queue: queueName,
                     autoAck: false,
-                    consumerTag: "NotificationInterviewConsumerITLocak",
+                    consumerTag: "Notification Interview Consumer ITLocak 999 ",
                     consumer: consumer);
 
                 while (!stoppingToken.IsCancellationRequested)

@@ -28,20 +28,20 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
             using var _connection = await factory.CreateConnectionAsync();
             using var _channel = await _connection.CreateChannelAsync();
             _logger.LogInformation($"Producer Product is Running");
-            await _channel.ExchangeDeclareAsync(_iConfig["RabbitMQ:Exchange:NotificationInterview"]!, type: ExchangeType.Direct, durable: true);
+            await _channel.ExchangeDeclareAsync(_iConfig["RabbitMQExchange"]!, type: ExchangeType.Direct, durable: true);
 
 
             await _channel.QueueDeclareAsync(
-                _iConfig["RabbitMQ:Queuen:NotificationInterview"]!,
+                _iConfig["RabbitMQQUEUE"]!,
                 durable: true,
                 exclusive: false,
                 autoDelete: false
             );
 
             await _channel.QueueBindAsync(
-                queue: _iConfig["RabbitMQ:Queuen:NotificationInterview"]!,
-                exchange: _iConfig["RabbitMQ:Exchange:NotificationInterview"]!,
-                routingKey: _iConfig["RabbitMQ:Queuen:NotificationInterviewRoutingKey"]!
+                queue: _iConfig["RabbitMQQUEUE"]!,
+                exchange: _iConfig["RabbitMQExchange"]!,
+                routingKey: _iConfig["RabbitMQRoutingKey"]!
             );
 
             var json = JsonSerializer.Serialize(request);
@@ -51,8 +51,8 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
                 Persistent = true
             };
             await _channel.BasicPublishAsync(
-                    exchange: _iConfig["RabbitMQ:Exchange:NotificationInterview"]!,
-                    routingKey: _iConfig["RabbitMQ:Queuen:NotificationInterviewRoutingKey"]!,
+                    exchange: _iConfig["RabbitMQExchange"]!,
+                    routingKey: _iConfig["RabbitMQRoutingKey"]!,
                     mandatory: false,
                     basicProperties: properties,
                     body: body

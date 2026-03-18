@@ -45,11 +45,11 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
 
                 if (_connection.IsOpen && _channel.IsOpen)
                 {
-                    _logger.LogInformation("✅ Connected to RabbitMQ successfully.");
+                    _logger.LogInformation(" Connected to RabbitMQ successfully.");
                 }
                 else
                 {
-                    _logger.LogWarning("❌ RabbitMQ connection not open.");
+                    _logger.LogWarning(" RabbitMQ connection not open.");
                     return; 
                 }
 
@@ -124,7 +124,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
                 await _channel.BasicConsumeAsync(
                     queue: queueName,
                     autoAck: false,
-                    consumerTag: "EmailConsumerITLocak",
+                    consumerTag: "Notification Interview",
                     consumer: consumer);
 
                 while (!stoppingToken.IsCancellationRequested)
@@ -134,7 +134,7 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.Workers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "EmailWorker crash");
+                _logger.LogError(ex, "Emai interview Worker crash");
             }
         }
     }
