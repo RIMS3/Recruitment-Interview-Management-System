@@ -25,5 +25,14 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 
             return Convert.ToBase64String(hashBytes) == storedHash;
         }
+
+        public static string GenerateSalt(int size = 16)
+        {
+            var rng = RandomNumberGenerator.Create();
+            var buffer = new byte[size];
+            rng.GetBytes(buffer);
+
+            return Convert.ToBase64String(buffer);
+        }
     }
 }
