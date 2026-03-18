@@ -18,7 +18,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using RecruitmentInterviewManagementSystem.Infastructure.Workers;
-
 using Minio;
 using PayOS;
 using RecruitmentInterviewManagementSystem.Infastructure.HubPayment;
@@ -26,6 +25,9 @@ using RecruitmentInterviewManagementSystem.Applications.TaiOrXiuFeature.Workers;
 using RecruitmentInterviewManagementSystem.Applications.TaiOrXiuFeature.HubResult;
 using RecruitmentInterviewManagementSystem.Applications.Notifications.Interfaces;
 using System.Threading.RateLimiting;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Validators;
 namespace RecruitmentInterviewManagementSystem.Start
 {
     public class Program
@@ -77,6 +79,9 @@ namespace RecruitmentInterviewManagementSystem.Start
             });
             builder.Services.AddSignalR();
             builder.Services.AddControllers();
+
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddValidatorsFromAssemblyContaining<UpdateCvEditorRequestValidator>();
 
 
             builder.Services.Scan(scan => scan
