@@ -109,6 +109,7 @@ namespace RecruitmentInterviewManagementSystem.Start
 
             builder.Services.AddHostedService<EmailWorker>();
             builder.Services.AddHostedService<NotificationInterviewWorker>();
+            builder.Services.AddHostedService<InformScheduleInterviewWorker>();
 
             var jwtSecret = builder.Configuration["Authentication:Jwt:Secret"]
                             ?? throw new Exception("JWT Secret not configured");

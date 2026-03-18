@@ -22,12 +22,14 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         private readonly FakeTopcvContext _context;
         private readonly IMinIOCV _minioService;
         private readonly INotificationInterviewProducer _notificationProducer;
+        private readonly IInformScheduleInterivewProducer _inform;
 
-        public EmployerApplicationsController(FakeTopcvContext context, IMinIOCV minioService, INotificationInterviewProducer notificationInterviewProducer)
+        public EmployerApplicationsController(FakeTopcvContext context, IMinIOCV minioService, INotificationInterviewProducer notificationInterviewProducer, IInformScheduleInterivewProducer informScheduleInterivewProducer)
         {
             _context = context;
             _minioService = minioService;
             _notificationProducer = notificationInterviewProducer;
+            _inform = informScheduleInterivewProducer;
         }
 
         [HttpGet]
@@ -156,15 +158,28 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
                     });
                 }
             }
-            //else if (application.Status == (int)ApplicationStatus.Rejected)
-            //{
-            //    await _notificationProducer.Execute(new Applications.Notifications.DTO.NotificationDTOS
-            //    {
-            //        Email = user.Email,
-            //        Name = user.FullName ?? "Candidate",
-            //        TypeService = "Email"
-            //    });
-            //}
+            else if (application.Status == (int)ApplicationStatus.Rejected)
+            {
+                
+                string companyName = application.Job?.Company?.Name ?? "Phòng Nhân sự";
+                string jobTitle = application.Job?.Title ?? "vị trí bạn đã ứng tuyển";
+
+                string rejectionMessage = $@"
+        <p>Xin chào <b>{user.FullName ?? "Ứng Viên"}</b>,</p>
+        <p>Cảm ơn bạn đã quan tâm và dành thời gian ứng tuyển vào vị trí <b>{jobTitle}</b> tại công ty chúng tôi.</p>
+        <p>Sau khi xem xét kỹ lưỡng hồ sơ, chúng tôi rất tiếc phải thông báo rằng chưa thể mời bạn đi tiếp trong quy trình tuyển dụng lần này. Tuy nhiên, hồ sơ của bạn vẫn sẽ được lưu trữ trong hệ thống và chúng tôi sẽ chủ động liên hệ nếu có vị trí phù hợp hơn trong tương lai.</p>
+        <p>Chúc bạn sớm tìm được cơ hội nghề nghiệp như ý và gặt hái được nhiều thành công.</p>
+        <p>Trân trọng,<br/><b>{companyName}</b></p>";
+
+                await _inform.Execute(new Applications.Notifications.DTO.NotificationDTOS
+                {
+                    Email = user.Email,
+                    Titel = "Thông báo kết quả ứng tuyển - " + jobTitle,
+                    Message = rejectionMessage,
+                    Name = user.FullName ?? "Ứng Viên",
+                    TypeService = "Email"
+                });
+            }
             await _context.SaveChangesAsync();
             return NoContent();
         }

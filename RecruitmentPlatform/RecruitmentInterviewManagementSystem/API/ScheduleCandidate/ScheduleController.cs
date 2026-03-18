@@ -28,12 +28,11 @@ namespace RecruitmentInterviewManagementSystem.API.ScheduleCandidate
         }
 
 
-
         [HttpPost("book")]
         public async Task<IActionResult> BookingSlot([FromBody] BookInterviewRequestDto request)
         {
             var result = await _bookingSlot.ExecuteAsync(request.Token, request.SlotId);
-            return Ok(request);
+            return Ok(new {status = result.IsSuccess, message = result.Message});
         }
 
     }

@@ -8,6 +8,10 @@
 
         public string? Link { get; set; }
 
+        public string? Titel { get; set; }
+
+        public string? Message { get; set; }
+
         public string TypeService { get; set; } = "Email";
     }
 }

@@ -1,6 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CommunityToolkit.HighPerformance.Helpers;
+using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Applications.DistributeLock;
 using RecruitmentInterviewManagementSystem.Applications.Features.Schedule;
+using RecruitmentInterviewManagementSystem.Applications.Notifications.Producers;
 using RecruitmentInterviewManagementSystem.Infastructure.Models;
 using RecruitmentInterviewManagementSystem.Models;
 
@@ -10,11 +12,13 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
     {
         private readonly FakeTopcvContext _db;
         private readonly IRedisLock _redisLock;
+        private readonly IInformScheduleInterivewProducer _informBooking;
 
-        public BookInterviewSlotForCandidate(FakeTopcvContext db, IRedisLock redisLock)
+        public BookInterviewSlotForCandidate(FakeTopcvContext db, IRedisLock redisLock, IInformScheduleInterivewProducer informScheduleInterivewProducer)
         {
             _db = db;
             _redisLock = redisLock;
+            _informBooking = informScheduleInterivewProducer;
         }
 
         public async Task<(bool IsSuccess, string Message)> ExecuteAsync(string token, Guid slotId)
@@ -88,6 +92,47 @@ namespace RecruitmentInterviewManagementSystem.Infastructure.ServiceImplement
 
                 // Commit xuống database
                 await _db.SaveChangesAsync();
+
+                var ApplicationCandidate = _db.Applications.Where(s => s.Id == interviewToken.ApplicationId).FirstOrDefault();
+
+                if (ApplicationCandidate != null)
+                {
+
+                    var user = await _db.CandidateProfiles
+                        .Include(s => s.User)
+                        .FirstOrDefaultAsync(s => s.Id == ApplicationCandidate.CandidateId);
+
+                    if (user != null)
+                    {
+
+                        string jobTitle = interviewToken.Application.Job.Title;
+                        string interviewTime = slot.StartTime.ToString("dd/MM/yyyy HH:mm");
+                        string interviewDate = slot.StartTime.ToString("dd/MM/yyyy");
+                        string startTime = slot.StartTime.ToString("HH:mm");
+
+                        string emailMessage = $@"
+            <h3>Xác nhận lịch phỏng vấn thành công</h3>
+            <p>Xin chào <b>{user.User.FullName ?? "Ứng viên tiềm năng"}</b>,</p>
+            <p>Chúc mừng bạn đã đặt lịch phỏng vấn thành công cho vị trí: <b>{jobTitle}</b>.</p>
+            <hr/>
+            <p><b>Thông tin chi tiết:</b></p>
+            <ul>
+                <li><b>Thời gian:</b> {startTime} ngày {interviewDate}</li>
+                <li><b>Trạng thái:</b> Đã xác nhận</li>
+            </ul>
+            <p>Vui lòng chuẩn bị kỹ lưỡng và có mặt đúng giờ. Nếu có bất kỳ thay đổi nào, bạn vui lòng liên hệ với bộ phận nhân sự của công ty.</p>
+            <p>Note,<br/>Nếu đây là nhầm lẫn thì hãy liện hệ cho bộ phận chăm sóc khác hàng của ITLOCAK Corporation</p>"";
+            <p>Trân trọng,<br/>Đội ngũ Tuyển dụng</p>";
+
+                        await _informBooking.Execute(new Applications.Notifications.DTO.NotificationDTOS
+                        {
+                            Email = user.User.Email,
+                            Message = emailMessage,
+                            TypeService = "Email",
+                            Name = user.User.FullName ?? "Ứng Viên Tiềm Năng"
+                        });
+                    }
+                }
 
                 return (true, "Đặt lịch phỏng vấn thành công!");
             }
