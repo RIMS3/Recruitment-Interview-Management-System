@@ -31,14 +31,6 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Validat
             {
                 experiences.RuleFor(e => e.CompanyName)
                     .NotEmpty().WithMessage("Tên công ty không được để trống.");
-
-                experiences.RuleFor(e => e.StartDate)
-                    .NotEmpty().WithMessage("Ngày bắt đầu làm việc không được để trống.");
-
-                experiences.RuleFor(e => e.EndDate)
-                    .GreaterThanOrEqualTo(e => e.StartDate)
-                    .WithMessage("Ngày kết thúc phải sau ngày bắt đầu.")
-                    .When(e => e.EndDate.HasValue && e.StartDate.HasValue);
             });
         }
     }

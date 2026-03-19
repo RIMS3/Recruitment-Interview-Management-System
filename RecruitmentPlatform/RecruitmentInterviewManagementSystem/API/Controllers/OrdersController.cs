@@ -29,18 +29,26 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         private async Task<Guid> GetActualUserIdFromTokenAsync()
         {
             var tokenClaimId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(tokenClaimId) || !Guid.TryParse(tokenClaimId, out Guid profileId))
+            if (string.IsNullOrEmpty(tokenClaimId) || !Guid.TryParse(tokenClaimId, out Guid idFromToken))
                 return Guid.Empty;
 
-            var isCandidate = await _context.CandidateProfiles.AnyAsync(c => c.Id == profileId);
-            if (isCandidate)
-            {
-                return await _context.CandidateProfiles
-                    .Where(c => c.Id == profileId).Select(c => c.UserId).FirstOrDefaultAsync();
-            }
+            // 1. TRƯỜNG HỢP TOKEN LƯU PROFILE_ID (Dành cho nick cũ)
+            var profileById = await _context.CandidateProfiles.FirstOrDefaultAsync(c => c.Id == idFromToken);
+            if (profileById != null) return profileById.UserId;
 
-            return await _context.EmployerProfiles
-                .Where(e => e.Id == profileId).Select(e => e.UserId).FirstOrDefaultAsync();
+            var empById = await _context.EmployerProfiles.FirstOrDefaultAsync(e => e.Id == idFromToken);
+            if (empById != null) return empById.UserId;
+
+            // 2. TRƯỜNG HỢP TOKEN LƯU USER_ID (Dành cho nick mới)
+            var profileByUserId = await _context.CandidateProfiles.FirstOrDefaultAsync(c => c.UserId == idFromToken);
+            if (profileByUserId != null) return idFromToken;
+
+            var empByUserId = await _context.EmployerProfiles.FirstOrDefaultAsync(e => e.UserId == idFromToken);
+            if (empByUserId != null) return idFromToken;
+
+            // 3. TRƯỜNG HỢP NICK MỚI TINH CHƯA CÓ PROFILE (Chỉ có trong bảng Users)
+            // Miễn là token hợp lệ, ta coi idFromToken chính là UserId luôn để họ còn xem được đơn hàng trống.
+            return idFromToken;
         }
         // ==========================================
 
@@ -51,7 +59,10 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             Guid actualUserId = await GetActualUserIdFromTokenAsync();
 
             if (actualUserId == Guid.Empty)
-                return Unauthorized(new { message = "Không tìm thấy thông tin xác thực." });
+            {
+                return BadRequest(new { message = "Lỗi Database: Token đúng nhưng Profile này đã bị xóa hoặc chưa được tạo trong SQL." });
+            }
+                //return Unauthorized(new { message = "Không tìm thấy thông tin xác thực." });
 
             var pagedOrders = await _orderService.GetMyOrdersAsync(actualUserId, pageNumber, pageSize);
             return Ok(pagedOrders);
