@@ -23,8 +23,19 @@ public class CRUDJobPostController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> CreateJob(CRUDCreateJobPostRequest request)
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        // Validate lương
+        if (request.SalaryMin.HasValue && request.SalaryMax.HasValue && request.SalaryMin > request.SalaryMax)
+        {
+            return BadRequest("Lương tối thiểu không được lớn hơn lương tối đa.");
+        }
 
+        // Validate ngày hết hạn (Phải sau thời điểm hiện tại)
+        if (request.ExpireAt.HasValue && request.ExpireAt <= DateTime.UtcNow)
+        {
+            return BadRequest("Ngày hết hạn phải là một ngày trong tương lai.");
+        }
+
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         if (userIdClaim == null)
         {
             return Unauthorized("UserId not found in token");
@@ -67,14 +78,12 @@ public class CRUDJobPostController : ControllerBase
     public async Task<IActionResult> GetMyJobs()
     {
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-
         if (userIdClaim == null)
         {
             return Unauthorized("UserId not found in token");
         }
 
         var userId = Guid.Parse(userIdClaim.Value);
-
         var employer = await _context.EmployerProfiles
             .FirstOrDefaultAsync(e => e.Id == userId);
 
@@ -89,6 +98,18 @@ public class CRUDJobPostController : ControllerBase
     [HttpPut("update")]
     public async Task<IActionResult> UpdateJob(CRUDUpdateJobPostRequest request)
     {
+        // Validate lương
+        if (request.SalaryMin.HasValue && request.SalaryMax.HasValue && request.SalaryMin > request.SalaryMax)
+        {
+            return BadRequest("Lương tối thiểu không được lớn hơn lương tối đa.");
+        }
+
+        // Validate ngày hết hạn
+        if (request.ExpireAt.HasValue && request.ExpireAt <= DateTime.UtcNow)
+        {
+            return BadRequest("Ngày hết hạn phải là một ngày trong tương lai.");
+        }
+
         var job = await _context.JobPosts
             .FirstOrDefaultAsync(j => j.Id == request.JobId);
 
@@ -122,7 +143,6 @@ public class CRUDJobPostController : ControllerBase
             return NotFound();
 
         _context.JobPosts.Remove(job);
-
         await _context.SaveChangesAsync();
 
         return Ok("Job deleted");
