@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentInterviewManagementSystem.Applications.Features.BookingInterviewSlot.DTO;
 using RecruitmentInterviewManagementSystem.Applications.Features.BookingInterviewSlot.Interfaces;
+using RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Services;
+using RecruitmentInterviewManagementSystem.Applications.Features.Schedule;
 
 namespace RecruitmentInterviewManagementSystem.API.Controllers
 {
-    
+
     [Route("api/interview")]
     [ApiController]
     public class InterviewSlotController : ControllerBase
@@ -15,16 +17,18 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
         private readonly IViewListSlotInterviewRoleEmployer _interview;
         private readonly ICreateNewInterviewSlot _createSlot;
         private readonly IUpdateInterviewSlot _udpate;
+        private readonly IViewDetailSlotInterview _service;
+        private readonly IUpdateScoreInterview _updateScored;
 
-        public InterviewSlotController(IRemoveInterviewSlot removeInterviewSlot, IViewListSlotInterviewRoleEmployer viewListSlotInterviewRoleEmployer, ICreateNewInterviewSlot createNewInterviewSlot, IUpdateInterviewSlot updateInterviewSlot)
+        public InterviewSlotController(IUpdateScoreInterview updateScoreInterview, IViewDetailSlotInterview viewDetailSlotInterview, IRemoveInterviewSlot removeInterviewSlot, IViewListSlotInterviewRoleEmployer viewListSlotInterviewRoleEmployer, ICreateNewInterviewSlot createNewInterviewSlot, IUpdateInterviewSlot updateInterviewSlot)
         {
             _removeSlot = removeInterviewSlot;
             _interview = viewListSlotInterviewRoleEmployer;
             _createSlot = createNewInterviewSlot;
             _udpate = updateInterviewSlot;
+            _service = viewDetailSlotInterview;
+            _updateScored = updateScoreInterview;
         }
-
-
 
         [HttpGet("slots")]
         public async Task<IActionResult> Index([FromQuery] RequestViewInterviewSlots request)
@@ -34,6 +38,25 @@ namespace RecruitmentInterviewManagementSystem.API.Controllers
             return Ok(interviewSlot);
         }
 
+        [HttpGet("detail/{id}")]
+        public async Task<IActionResult> GetSlotDetails([FromRoute] Guid id)
+        {
+            var detail = await _service.GetSlotDetailAsync(id);
+
+            if (detail == null)
+            {
+                return NotFound(new { Message = "Không tìm thấy slot phỏng vấn này." });
+            }
+
+            return Ok(detail);
+        }
+
+        [HttpPatch("result")]
+        public async Task<IActionResult> UpdateScored([FromBody] UpdateScoreInterivewDTo request)
+        {
+            var detail = await _updateScored.Execute(request);
+            return Ok(detail);
+        }
 
         [HttpPost("slots")]
         public async Task<IActionResult> CreateSlot([FromBody] RequestCreateNewInterviewSlotDTO request)
