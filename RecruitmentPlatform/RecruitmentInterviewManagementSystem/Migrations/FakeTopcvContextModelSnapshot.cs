@@ -522,6 +522,9 @@ namespace RecruitmentInterviewManagementSystem.Migrations
                     b.Property<int?>("Gender")
                         .HasColumnType("int");
 
+                    b.Property<string>("ImportedCvUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool?>("IsDefault")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")

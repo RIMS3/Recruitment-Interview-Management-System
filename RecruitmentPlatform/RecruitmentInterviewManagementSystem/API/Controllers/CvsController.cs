@@ -212,4 +212,170 @@ public class CvsController : ControllerBase
         }
     }
 
+    [HttpPost("import")]
+    [Authorize]
+    public async Task<IActionResult> ImportCv(IFormFile file)
+    {
+        try
+        {
+            // 1. Kiểm tra file tồn tại
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { message = "Vui lòng chọn file hợp lệ." });
+            }
+
+            // ==========================================
+            // TẤM KHIÊN BẢO MẬT: CHẶN FILE ĐỘC HẠI
+            // ==========================================
+
+            // 1.1 Chặn dung lượng (Tối đa 5MB)
+            var maxFileSize = 5 * 1024 * 1024;
+            if (file.Length > maxFileSize)
+            {
+                return BadRequest(new { message = "Dung lượng file quá lớn. Tối đa chỉ cho phép 5MB." });
+            }
+
+            // 1.2 Chặn định dạng đuôi file (Extension)
+            var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new { message = "Hệ thống chỉ chấp nhận định dạng PDF hoặc Word (.pdf, .doc, .docx)." });
+            }
+
+            // 1.3 Chặn Mime Type (Chống đổi đuôi file làm giả)
+            var allowedMimeTypes = new[] {
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            };
+            if (!allowedMimeTypes.Contains(file.ContentType))
+            {
+                return BadRequest(new { message = "Nội dung file không hợp lệ hoặc đã bị làm giả định dạng." });
+            }
+
+            // 1.4 Kiểm tra chữ ký file (File Signature)
+            if (!IsValidFileSignature(file))
+            {
+                return BadRequest(new { message = "Phát hiện file bị đổi đuôi giả mạo! Chỉ chấp nhận file PDF/Word thật." });
+            }
+
+            // 2. Lấy thông tin User/Profile từ Token
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out Guid extractedId))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính người dùng." });
+            }
+
+            // Tìm Candidate Profile (Logic 2 lớp để tránh lỗi NotFound)
+            var candidateProfile = await _context.CandidateProfiles
+                .FirstOrDefaultAsync(c => c.UserId == extractedId);
+
+            if (candidateProfile == null)
+            {
+                candidateProfile = await _context.CandidateProfiles
+                    .FirstOrDefaultAsync(c => c.Id == extractedId);
+            }
+
+            if (candidateProfile == null)
+            {
+                return NotFound(new { message = "Không tìm thấy hồ sơ ứng viên của bạn." });
+            }
+
+            // 3. Đẩy file lên MinIO bằng hàm Service có sẵn
+            string bucketName = "cvs";
+            var objectName = await _minIO.UploadAsync(file, bucketName);
+
+            // 4. Khởi tạo record CV và lưu vào SQL Database
+            var newCv = new Cv
+            {
+                Id = Guid.NewGuid(),
+                CandidateId = candidateProfile.Id,
+                FullName = "CV Import (" + file.FileName + ")", // Tên hiển thị ngoài UI
+
+                FileName = file.FileName,
+                MimeType = file.ContentType,
+
+                // LƯU CỘT MỚI: Định dạng chuẩn "bucket/object"
+                ImportedCvUrl = $"{bucketName}/{objectName}",
+
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            _context.Cvs.Add(newCv);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Import CV thành công!",
+                cvId = newCv.Id
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+        }
+    }
+
+    private bool IsValidFileSignature(IFormFile file)
+    {
+        // Danh sách chữ ký byte chuẩn của PDF và Word
+        var signatures = new Dictionary<string, byte[]>
+        {
+            { ".pdf", new byte[] { 0x25, 0x50, 0x44, 0x46 } }, // Bắt đầu bằng %PDF
+            { ".docx", new byte[] { 0x50, 0x4B, 0x03, 0x04 } }, // Định dạng ZIP/OpenXML
+            { ".doc", new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 } } // Định dạng Word cũ
+        };
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!signatures.ContainsKey(ext)) return false;
+
+        using (var stream = file.OpenReadStream())
+        using (var reader = new BinaryReader(stream))
+        {
+            var expectedSignature = signatures[ext];
+            var fileHeader = reader.ReadBytes(expectedSignature.Length);
+
+            // Kiểm tra xem các byte đầu tiên của file có khớp với định dạng chuẩn không
+            return fileHeader.SequenceEqual(expectedSignature);
+        }
+    }
+
+    [HttpGet("{id:guid}/view-import")]
+    [Authorize]
+    public async Task<IActionResult> ViewImportedCv(Guid id)
+    {
+        try
+        {
+            // Tìm CV trong Database
+            var cv = await _context.Cvs.FirstOrDefaultAsync(c => c.Id == id);
+
+            if (cv == null || string.IsNullOrEmpty(cv.ImportedCvUrl))
+            {
+                return NotFound(new { message = "Không tìm thấy file CV gốc." });
+            }
+
+            // Tách tên bucket và tên object từ chuỗi "cvs/2026/03/xxx.pdf"
+            var parts = cv.ImportedCvUrl.Split('/', 2);
+            if (parts.Length != 2)
+            {
+                return BadRequest(new { message = "Đường dẫn file không hợp lệ." });
+            }
+
+            string bucketName = parts[0];
+            string objectName = parts[1];
+
+            // Dùng hàm có sẵn của ông để lấy Presigned URL từ MinIO
+            var url = await _minIO.GetUrlImage(bucketName, objectName);
+
+            // Trả link về cho React
+            return Ok(new { url = url });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+        }
+    }
 }
