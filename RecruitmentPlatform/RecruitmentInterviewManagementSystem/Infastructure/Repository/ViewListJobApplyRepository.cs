@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RecruitmentInterviewManagementSystem.Models;
 using RecruitmentInterviewManagementSystem.Models.DTOs;
+using RecruitmentInterviewManagementSystem.Domain.Enums;
 
 namespace RecruitmentInterviewManagementSystem.Repositories
 {
@@ -19,6 +20,7 @@ namespace RecruitmentInterviewManagementSystem.Repositories
                           select new ViewListJobApplyDTO
                           {
                               ApplicationId = app.Id,
+                              JobId = job.Id,
                               JobTitle = job.Title,
                               CompanyName = comp.Name,
                               AppliedAt = app.AppliedAt,
@@ -32,7 +34,13 @@ namespace RecruitmentInterviewManagementSystem.Repositories
         public async Task<bool> DeleteApplication(Guid applicationId)
         {
             var app = await _context.Applications.FindAsync(applicationId);
-            if (app == null) return false;
+
+            // KIỂM TRA: Nếu không tìm thấy hoặc trạng thái khác Pending (0) thì không cho phép xóa
+            if (app == null || app.Status != (int)ApplicationStatus.Pending)
+            {
+                return false;
+            }
+
             _context.Applications.Remove(app);
             return await _context.SaveChangesAsync() > 0;
         }
