@@ -45,8 +45,9 @@ namespace RecruitmentInterviewManagementSystem.Applications.Features.Cvs.Service
             // 2. Truy vấn danh sách CV bằng actualProfileId (ID chuẩn của bảng Profile)
             var rawCvs = await _cvRepository.GetCvsByCandidateIdAsync(actualProfileId);
 
-            // 3. Lọc bỏ các CV đã xóa mềm
-            var activeCvs = rawCvs.Where(cv => cv.IsDeleted == false);
+            // 3. Lọc bỏ các CV đã xóa mềm (lọc các CV có SĐT là cờ bản nháp)
+            //var activeCvs = rawCvs.Where(cv => cv.IsDeleted == false);
+            var activeCvs = rawCvs.Where(cv => cv.IsDeleted == false && cv.PhoneNumber != "[BẢN NHÁP]");
 
             return activeCvs.Select(cv => new CvSummaryDto
             {

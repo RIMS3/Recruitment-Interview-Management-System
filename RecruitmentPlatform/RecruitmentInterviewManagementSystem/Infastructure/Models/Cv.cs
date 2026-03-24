@@ -39,6 +39,8 @@ public partial class Cv
 
     public string? MimeType { get; set; }
 
+    public string? ImportedCvUrl { get; set; }
+
     public bool? IsDefault { get; set; }
 
     public DateTime? CreatedAt { get; set; }
