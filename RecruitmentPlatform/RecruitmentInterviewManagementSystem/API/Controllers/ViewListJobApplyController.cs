@@ -14,7 +14,7 @@ public class ViewListJobApplyController : ControllerBase
     public async Task<IActionResult> Unapply(Guid applicationId)
     {
         var success = await _service.UnapplyJob(applicationId);
-        return success ? Ok(new { isSuccess = true, message = "Đã hủy ứng tuyển!" })
-                       : BadRequest(new { isSuccess = false, message = "Lỗi khi hủy hồ sơ!" });
+        return success ? Ok(new { isSuccess = true, message = "Đã hủy ứng tuyển thành công!" })
+                       : BadRequest(new { isSuccess = false, message = "Không thể hủy hồ sơ đã được xử lý hoặc không tồn tại!" });
     }
 }
